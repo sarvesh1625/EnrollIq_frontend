@@ -70,7 +70,7 @@ export default function Settings() {
 
         <div style={{ marginBottom:28 }}>
           <h1 style={{ fontFamily:'Georgia,serif', fontSize:28, fontWeight:700, color:'var(--c-ink)', margin:0 }}>Settings</h1>
-          <p style={{ color:'var(--c-muted)', fontSize:13, margin:'6px 0 0' }}>School info · Appearance · Integrations</p>
+          <p style={{ color:'var(--c-muted)', fontSize:13, margin:'6px 0 0' }}>School info · Appearance · Security</p>
         </div>
 
         <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
@@ -159,29 +159,6 @@ export default function Settings() {
             </div>
           </Section>
 
-          {/* Integrations */}
-          <Section title="Integrations" sub="Connect external services to unlock features">
-            <div>
-              {[
-                { icon:'💬', name:'WhatsApp Business API', desc:'Parent attendance & transport notifications', env:'WHATSAPP_TOKEN', status:'pending' },
-                { icon:'🤖', name:'AI Chatbot (Groq)',     desc:'School discovery chatbot · free at groq.com', env:'GROQ_API_KEY',   status:'pending' },
-                { icon:'📊', name:'Google Ads tracking',   desc:'Track ad clicks and enquiry conversions',     env:'Auto-configured', status:'active'  },
-                { icon:'📱', name:'SMS (MSG91)',            desc:'SMS to parents for critical updates',         env:'MSG91_API_KEY',   status:'pending' },
-              ].map((item, i, arr) => (
-                <div key={item.name} style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 0', borderBottom: i < arr.length-1 ? '1px solid var(--c-border)' : 'none' }}>
-                  <span style={{ fontSize:22, flexShrink:0 }}>{item.icon}</span>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <p style={{ fontSize:13, fontWeight:600, color:'var(--c-ink)', margin:0 }}>{item.name}</p>
-                    <p style={{ fontSize:12, color:'var(--c-muted)', margin:'2px 0 0' }}>{item.desc}</p>
-                    <code style={{ fontSize:11, color:'#9ca3af' }}>{item.env}</code>
-                  </div>
-                  <span className={`badge ${item.status === 'active' ? 'badge-green' : 'badge-amber'}`}>
-                    {item.status === 'active' ? 'Active' : 'Setup needed'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Section>
 
         </div>
       </div>

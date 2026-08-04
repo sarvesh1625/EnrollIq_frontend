@@ -39,10 +39,15 @@ export default function SchoolProfile() {
   const [slug,      setSlug]      = useState('')
   const [bannerPreview, setBannerPreview] = useState(null)
   const [gallery,   setGallery]   = useState([])
+  const [faculty,   setFaculty]   = useState([])
+  const [facForm,   setFacForm]   = useState({ name:'', role:'', bio:'' })
+  const [facPhoto,  setFacPhoto]  = useState(null)
+  const [facSaving, setFacSaving] = useState(false)
   const [activeTab, setActiveTab] = useState('basic')
 
   const bannerRef  = useRef(null)
   const galleryRef = useRef(null)
+  const facPhotoRef = useRef(null)
 
   // Form state — all school profile fields
   const [form, setForm] = useState({
@@ -111,6 +116,7 @@ export default function SchoolProfile() {
     }).catch(() => {})
 
     api.get('/discovery/gallery').then(res => setGallery(res.data)).catch(() => {})
+    api.get('/discovery/faculty').then(res => setFaculty(res.data)).catch(() => {})
     api.get('/ads/my').then(res => setSlug(res.data.ad?.landing_slug || '')).catch(() => {})
   }, [])
 
@@ -119,6 +125,17 @@ export default function SchoolProfile() {
     ? form.facilities.split(',').map(f => f.trim()).filter(Boolean)
     : []
 
+  const [customFac, setCustomFac] = useState('')
+  const customFacilities = selectedFacilities.filter(
+    f => !FACILITIES_LIST.some(p => p.name.toLowerCase() === f.toLowerCase())
+  )
+  const addCustomFacility = () => {
+    const name = customFac.trim()
+    if (!name) return
+    if (selectedFacilities.some(f => f.toLowerCase() === name.toLowerCase())) { setCustomFac(''); return }
+    setForm(p => ({ ...p, facilities: [...selectedFacilities, name].join(',') }))
+    setCustomFac('')
+  }
   const toggleFacility = name => {
     const s = new Set(selectedFacilities)
     s.has(name) ? s.delete(name) : s.add(name)
@@ -191,6 +208,31 @@ export default function SchoolProfile() {
     showToast('Photo removed')
   }
 
+  // Faculty
+  const addFaculty = async () => {
+    if (!facForm.name.trim()) { showToast('Faculty name is required'); return }
+    setFacSaving(true)
+    try {
+      const fd = new FormData()
+      fd.append('name', facForm.name)
+      fd.append('role', facForm.role)
+      fd.append('bio',  facForm.bio)
+      if (facPhoto) fd.append('photo', facPhoto)
+      const res = await api.post('/discovery/faculty', fd, { headers:{ 'Content-Type':'multipart/form-data' } })
+      setFaculty(prev => [...prev, res.data])
+      setFacForm({ name:'', role:'', bio:'' }); setFacPhoto(null)
+      if (facPhotoRef.current) facPhotoRef.current.value = ''
+      showToast('Faculty member added ✓')
+    } catch { showToast('Could not add faculty') }
+    setFacSaving(false)
+  }
+  const deleteFaculty = async id => {
+    if (!confirm('Remove this faculty member?')) return
+    await api.delete(`/discovery/faculty/${id}`).catch(() => {})
+    setFaculty(prev => prev.filter(m => m.id !== id))
+    showToast('Faculty member removed')
+  }
+
   // Save all
   const handleSave = async () => {
     setSaving(true)
@@ -207,6 +249,7 @@ export default function SchoolProfile() {
     { key:'facilities', label:'Facilities'    },
     { key:'highlights', label:'Highlights'    },
     { key:'banner',     label:'Banner & Photos'},
+    { key:'faculty',    label:'Faculty'       },
   ]
 
   const INPUT = { width:'100%', border:'1.5px solid #e5e7eb', borderRadius:10, padding:'10px 14px', fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'inherit', color:'#1a1814', background:'white' }
@@ -431,6 +474,33 @@ export default function SchoolProfile() {
                   )
                 })}
               </div>
+
+              {customFacilities.length > 0 && (
+                <div style={{ marginTop:14 }}>
+                  <p style={{ fontSize:12, fontWeight:600, color:'#6b7280', marginBottom:8 }}>Your custom facilities</p>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                    {customFacilities.map(name => (
+                      <span key={name} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'8px 12px', borderRadius:10, background:'#12a38a', color:'white', fontSize:13, fontWeight:500 }}>
+                        {name}
+                        <button type="button" onClick={() => toggleFacility(name)}
+                          style={{ background:'rgba(255,255,255,0.25)', border:'none', color:'white', borderRadius:6, width:18, height:18, cursor:'pointer', fontSize:12, lineHeight:1 }}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop:16, display:'flex', gap:10, flexWrap:'wrap' }}>
+                <input value={customFac} onChange={e => setCustomFac(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomFacility() } }}
+                  placeholder="Add your own facility (e.g. Robotics Lab, Horse Riding)"
+                  style={{ flex:1, minWidth:220, border:'1.5px solid #e5e7eb', borderRadius:10, padding:'10px 14px', fontSize:14, outline:'none', fontFamily:'inherit', color:'#1a1814' }} />
+                <button type="button" onClick={addCustomFacility}
+                  style={{ background:'#12a38a', color:'white', border:'none', borderRadius:10, padding:'10px 20px', fontSize:14, fontWeight:600, cursor:'pointer' }}>
+                  + Add
+                </button>
+              </div>
+
               <div style={{ marginTop:16, padding:'12px 14px', background:'#f8f6f1', borderRadius:10 }}>
                 <p style={{ fontSize:12, color:'#9ca3af' }}>
                   {selectedFacilities.length} facilities selected:
@@ -565,6 +635,68 @@ export default function SchoolProfile() {
                   style={{ border:'2px dashed #e5e7eb', background:'white', borderRadius:12, padding:'12px 20px', fontSize:13, color:'#6b7280', cursor:'pointer', width:'100%', opacity:uploadingG?0.6:1 }}>
                   {uploadingG ? 'Uploading...' : `+ Add photos (${gallery.length} uploaded) — select multiple at once`}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── FACULTY ── */}
+          {activeTab === 'faculty' && (
+            <div>
+              <p style={SECTION_TITLE}>Faculty — shown on your public page</p>
+              <p style={{ fontSize:13, color:'#6b7280', marginBottom:20 }}>
+                Add teachers and staff with a photo, role and short bio. They appear in a
+                "Meet our faculty" section on your school landing page.
+              </p>
+
+              {/* existing faculty */}
+              {faculty.length > 0 && (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:14, marginBottom:24 }}>
+                  {faculty.map(m => (
+                    <div key={m.id} style={{ position:'relative', background:'#faf9f7', borderRadius:12, padding:16, textAlign:'center', border:'1px solid #eee' }}>
+                      <button className="del-btn" onClick={() => deleteFaculty(m.id)}
+                        style={{ position:'absolute', top:8, right:8, background:'rgba(0,0,0,0.5)', color:'white', border:'none', borderRadius:6, width:24, height:24, cursor:'pointer', fontSize:13 }}>×</button>
+                      {m.photo_url ? (
+                        <img src={`${api.defaults.baseURL?.replace('/api','')||'http://localhost:5000'}${m.photo_url}`} alt={m.name}
+                          style={{ width:70, height:70, borderRadius:'50%', objectFit:'cover', margin:'0 auto 10px', display:'block' }} />
+                      ) : (
+                        <div style={{ width:70, height:70, borderRadius:'50%', margin:'0 auto 10px', background:'linear-gradient(135deg,#12a38a,#0d8571)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:26, fontWeight:700 }}>{m.name?.[0]?.toUpperCase()}</div>
+                      )}
+                      <p style={{ fontSize:14, fontWeight:700, color:'#1a1814' }}>{m.name}</p>
+                      {m.role && <p style={{ fontSize:12, color:'#12a38a', fontWeight:600 }}>{m.role}</p>}
+                      {m.bio && <p style={{ fontSize:11.5, color:'#6b7280', marginTop:6, lineHeight:1.5 }}>{m.bio}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* add new */}
+              <div style={{ border:'1px solid #eee', borderRadius:12, padding:20, background:'#fff' }}>
+                <p style={{ fontSize:13, fontWeight:700, color:'#1a1814', marginBottom:14 }}>Add a faculty member</p>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+                  <div>
+                    <label style={LABEL}>Name *</label>
+                    <input style={INPUT} value={facForm.name} onChange={e=>setFacForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Mrs. Lakshmi Rao" />
+                  </div>
+                  <div>
+                    <label style={LABEL}>Role</label>
+                    <input style={INPUT} value={facForm.role} onChange={e=>setFacForm(f=>({...f,role:e.target.value}))} placeholder="e.g. Principal / Maths Teacher" />
+                  </div>
+                </div>
+                <div style={{ marginBottom:12 }}>
+                  <label style={LABEL}>Short bio</label>
+                  <input style={INPUT} value={facForm.bio} onChange={e=>setFacForm(f=>({...f,bio:e.target.value}))} placeholder="e.g. 12 years experience, M.Sc, gold medalist" />
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+                  <input ref={facPhotoRef} type="file" accept="image/*" style={{ display:'none' }} onChange={e=>setFacPhoto(e.target.files[0])} />
+                  <button onClick={()=>facPhotoRef.current?.click()}
+                    style={{ border:'2px dashed #e5e7eb', background:'white', borderRadius:10, padding:'8px 16px', fontSize:13, color:'#6b7280', cursor:'pointer' }}>
+                    {facPhoto ? `📷 ${facPhoto.name.slice(0,24)}` : '📷 Choose photo (optional)'}
+                  </button>
+                  <button onClick={addFaculty} disabled={facSaving}
+                    style={{ background:'#12a38a', color:'white', border:'none', borderRadius:10, padding:'9px 22px', fontSize:14, fontWeight:600, cursor:'pointer', opacity:facSaving?0.6:1 }}>
+                    {facSaving ? 'Adding...' : '+ Add faculty'}
+                  </button>
+                </div>
               </div>
             </div>
           )}
