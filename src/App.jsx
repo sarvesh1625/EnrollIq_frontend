@@ -30,11 +30,10 @@ import SchoolProfile  from './pages/SchoolProfile'
 import AdsManagement  from './pages/AdsManagement'
 import RoleDashboard from './pages/RoleDashboard'
 import SchoolKit from './pages/Schoolkit'
-import LiveTracking from './pages/LiveTracking'
+import LiveTracking from "./pages/Livetracking";
 import Cameras from './pages/Cameras'
-import DriverTracking from './pages/DriverTracking'
-import AcademicYear from './pages/AcademicYear'
-
+import DriverTracking from "./pages/Drivertracking";
+import AcademicYear from "./pages/Academicyear";
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
