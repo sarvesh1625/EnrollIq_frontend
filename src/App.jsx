@@ -4,8 +4,6 @@ import { useAuth } from './context/AuthContext'
 // Public pages
 import Login          from './pages/Login'
 import SchoolDiscovery from './pages/SchoolDiscovery'
-import ParentPortal   from './pages/ParentPortal'
-import DriverDashboard from './pages/DriverDashboard'
 import SuperAdmin     from './pages/SuperAdmin'
 import LandingPage    from './pages/LandingPage'
 
@@ -32,8 +30,8 @@ import RoleDashboard from './pages/RoleDashboard'
 import SchoolKit from './pages/Schoolkit'
 import LiveTracking from "./pages/Livetracking";
 import Cameras from './pages/Cameras'
-import DriverTracking from "./pages/Drivertracking";
 import AcademicYear from "./pages/Academicyear";
+import DailyUpdates from "./pages/DailyUpdates";
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -57,13 +55,11 @@ export default function App() {
         <Route path="/"           element={<LandingPage />} />
         <Route path="/login"      element={<Login />} />
         <Route path="/discover"   element={<SchoolDiscovery />} />
-        <Route path="/parent"     element={<ParentPortal />} />
-        <Route path="/driver"     element={<DriverDashboard />} />
         <Route path="/superadmin" element={<SuperAdmin />} />
         <Route path="/tracking" element={<LiveTracking />} />
 <Route path="/cameras"  element={<Cameras />} />
-<Route path="/driver/track/:busId" element={<DriverTracking />} />
 <Route path="/academic" element={<AcademicYear />} />
+<Route path="/daily-updates" element={<DailyUpdates />} />
 
         {/* Protected — school admin/staff */}
         <Route path="/dashboard"     element={<PrivateRoute><Dashboard /></PrivateRoute>} />

@@ -17,19 +17,32 @@ export default function Login() {
     if (!email || !password) { setError('Email and password are required'); return }
     setLoading(true); setError('')
     try {
+      // 1) Try normal admin/staff login first
       const res = await api.post('/auth/login', { email, password })
       login(res.data.user, res.data.token)
       const roleRedirect = {
-  admin:             '/dashboard',
-  staff:             '/staff-dashboard',
-  teacher:           '/teacher-dashboard',
-  accountant:        '/accountant-dashboard',
-  receptionist:      '/receptionist-dashboard',
-  transport_manager: '/transport-dashboard',
-}
-navigate(roleRedirect[res.data.user?.role] || '/dashboard', { replace: true })
+        admin:             '/dashboard',
+        staff:             '/staff-dashboard',
+        teacher:           '/teacher-dashboard',
+        accountant:        '/accountant-dashboard',
+        receptionist:      '/receptionist-dashboard',
+        transport_manager: '/transport-dashboard',
+      }
+      navigate(roleRedirect[res.data.user?.role] || '/dashboard', { replace: true })
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password')
+      // 2) Admin login failed — try super admin login before giving up
+      try {
+        const sa = await api.post('/superadmin/login', { email, password })
+        // store super admin session the same way the SuperAdmin page expects
+        localStorage.setItem('sa_token', sa.data.token)
+        localStorage.setItem('sa_admin', JSON.stringify(sa.data.admin))
+        // full page load so the SuperAdmin page mounts fresh with the token
+        window.location.href = '/superadmin'
+        return
+      } catch (saErr) {
+        // 3) Both failed — show a single clear error
+        setError(err.response?.data?.message || 'Invalid email or password')
+      }
     } finally { setLoading(false) }
   }
 
@@ -46,7 +59,7 @@ navigate(roleRedirect[res.data.user?.role] || '/dashboard', { replace: true })
             "The smartest way to manage school admissions."
           </blockquote>
           <div className="flex flex-col gap-4">
-            {['CRM + Lead Management','Fee & Transport','Parent & Driver Portal','AI Lead Scoring'].map(f => (
+            {['CRM + Lead Management','Fee & Transport','Parent Communication','AI Lead Scoring'].map(f => (
               <div key={f} className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-brand-500 flex items-center justify-center flex-shrink-0">
                   <span className="text-white text-xs">✓</span>
@@ -101,10 +114,6 @@ navigate(roleRedirect[res.data.user?.role] || '/dashboard', { replace: true })
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-400">
               <a href="/superadmin" className="text-brand-600 hover:underline">Super Admin →</a>
-              {' · '}
-              <a href="/parent" className="text-brand-600 hover:underline">Parent Portal →</a>
-              {' · '}
-              <a href="/driver" className="text-brand-600 hover:underline">Driver Portal →</a>
             </p>
           </div>
         </div>

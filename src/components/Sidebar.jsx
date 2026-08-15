@@ -1,4 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 
 const ROLE_ALLOWED = {
@@ -39,6 +41,7 @@ const NAV = [
   { section: 'Academic' },
   { to:'/attendance',     icon:'✓',  label:'Attendance'    },
   { to:'/exams',          icon:'✎',  label:'Exams'         },
+  { to:'/daily-updates',  icon:'📔', label:'Daily Updates', feature:'daily_diary' },
   { section: 'Finance & Ops' },
   { to:'/fees',           icon:'◎',  label:'Fees'          },
   { to:'/transport',      icon:'⬡',  label:'Transport'     },
@@ -59,6 +62,10 @@ const NAV = [
 export default function Sidebar({ onClose, mobile }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [features, setFeatures] = useState({})
+  useEffect(() => {
+    api.get('/features/mine').then(r => setFeatures(r.data.features || {})).catch(() => setFeatures({}))
+  }, [])
   const role = user?.role || 'admin'
   const meta = ROLE_META[role] || ROLE_META.admin
   const allowed  = ROLE_ALLOWED[role]
@@ -124,6 +131,7 @@ export default function Sidebar({ onClose, mobile }) {
           }
           if (!canSee(item.to)) return null
           if (item.to === homeLink || item.to === '/dashboard') return null
+          if (item.feature && !features[item.feature]) return null
           return (
             <NavLink key={item.to} to={item.to} onClick={go}
               className={({ isActive }) => `sb-link ${isActive ? 'active' : ''}`}>

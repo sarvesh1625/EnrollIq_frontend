@@ -175,7 +175,7 @@ function EnquiryModal({ school, onClose }) {
   const handleSubmit = async e => {
     e.preventDefault(); setLoading(true); setError('')
     try {
-      await api.post('/discovery/enquire', { ...form, school_id: school.id })
+      await api.post('/leads/public', { ...form, school_id: school.id })
       setStep(2)
     } catch (err) { setError(err.response?.data?.message || 'Failed. Try again.') }
     finally { setLoading(false) }

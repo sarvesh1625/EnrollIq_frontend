@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import api from '../api/axios'
 
-const GRADES   = ['Pre-KG','LKG','UKG','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10']
+const GRADES   = ['Pre-LKG','Nursery','LKG','UKG','Pre-KG','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10']
 const SECTIONS = ['A','B','C','D']
 const STATUSES = ['New','Under Review','Interview Scheduled','Admitted','Rejected']
 
@@ -34,6 +34,11 @@ function ConvertModal({ admission, onClose, onConverted }) {
   const set = f => e => setForm(p => ({ ...p, [f]: e.target.value }))
 
   const handleConvert = async () => {
+    // confirm before creating the student record, to avoid accidental double-enrollment
+    const ok = window.confirm(
+      `Enroll ${admission.student_name} as a student?\n\nThis creates a permanent student record. Do this only once per admission.`
+    )
+    if (!ok) return
     setLoading(true); setError('')
     try {
       const res = await api.post(`/admissions/${admission.id}/convert-to-student`, form)
@@ -323,20 +328,20 @@ export default function Admissions() {
     <Layout>
       <div className="page">
         {toast && (
-          <div className="toast">{toast}</div>
+          <div className="fixed top-5 right-5 z-50 bg-ink text-white text-sm px-5 py-3 rounded-xl shadow-xl">{toast}</div>
         )}
 
         {/* Header */}
-        <div className="page-head">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="font-serif text-2xl lg:text-3xl font-bold text-ink">Admissions</h1>
             <p className="text-gray-400 text-sm mt-1">Manage applications · Convert to student when admitted</p>
           </div>
-          <div className="actions"><button onClick={() => setShowAdd(true)} className="btn-primary">+ New Application</button></div>
+          <button onClick={() => setShowAdd(true)} className="btn-primary">+ New Application</button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 lg:grid-cols-5 gap-4 mb-8 g-3">
+        <div className="grid grid-cols-5 gap-4 mb-8 g-3">
           {[
             { label:'Total applications', value: stats.total_applications, color:'text-ink'       },
             { label:'Pending review',     value: stats.pending_review,     color:'text-blue-600'  },
@@ -371,7 +376,7 @@ export default function Admissions() {
 
         {/* Table */}
         <div className="card" style={{padding:0,overflowX:"auto"}}>
-          <table className="w-full text-sm" style={{ minWidth: 860 }}>
+          <table className="w-full text-sm">
             <thead className="border-b border-gray-100 bg-paper">
               <tr>
                 {['Student','Grade','Parent','Phone','Docs','Applied on','Status','Action'].map(h => (
@@ -459,7 +464,7 @@ export default function Admissions() {
                             Edit
                           </button>
                         )}
-                        {!isConverted && isAdmitted && (
+                        {!isConverted && (
                           <>
                             <span className="text-gray-200">|</span>
                             <button onClick={() => setEditItem(a)}
@@ -480,7 +485,7 @@ export default function Admissions() {
         {/* How it works banner */}
         <div className="card mt-5 bg-blue-50 border-blue-100">
           <p className="text-sm font-semibold text-ink mb-3">How Admissions → Students works</p>
-          <div className="steps-flow">
+          <div className="flex gap-0">
             {[
               { n:'1', label:'New application',    desc:'Parent applies, docs submitted', color:'#6b7280' },
               { n:'2', label:'Under review',        desc:'Team reviews documents', color:'#2563eb' },

@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
 import { getStudents, getStudentStats, createStudent, updateStudent, deleteStudent } from '../api/students'
 import api from '../api/axios'
+import StudentExitModal from '../components/StudentExitModal'
 
 const GRADES   = ['Pre-KG','LKG','UKG','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10']
 const SECTIONS = ['A','B','C','D','E']
 
 // ── Student Detail Drawer ─────────────────────────────────────────────────────
-function StudentDrawer({ student, onClose, onEdit, onDelete }) {
+function StudentDrawer({ student, onClose, onEdit, onDelete, onExit, onReactivate }) {
   const [transport, setTransport] = useState(null)
   const [attendance, setAttendance] = useState(null)
   const [payments, setPayments]   = useState([])
@@ -164,6 +165,21 @@ function StudentDrawer({ student, onClose, onEdit, onDelete }) {
                   Deactivate
                 </button>
               </div>
+              {student.archived ? (
+                <div className="mt-2" style={{ background:'#fbf3dd', border:'1px solid #ebd9a8', borderRadius:10, padding:'12px 14px' }}>
+                  <p style={{ fontSize:13, fontWeight:600, color:'#9A6A00', margin:'0 0 2px' }}>
+                    Exited: {student.exit_type || 'Archived'}{student.exit_date ? ` · ${student.exit_date}` : ''}
+                  </p>
+                  {student.exit_reason && <p style={{ fontSize:12, color:'#6b7280', margin:'0 0 10px' }}>{student.exit_reason}</p>}
+                  <button onClick={() => onReactivate && onReactivate(student)}
+                    className="btn-primary w-full">↩ Reactivate Student (Undo Exit)</button>
+                </div>
+              ) : (
+                <button onClick={() => onExit && onExit(student)}
+                  className="btn-ghost w-full mt-2" style={{ borderColor:'#f0c000', color:'#9A6A00' }}>
+                  🎓 Manage Exit (Dropout / Transfer / Graduate)
+                </button>
+              )}
             </div>
           )}
 
@@ -461,6 +477,8 @@ export default function Students() {
   const [showModal,   setShowModal]   = useState(false)
   const [editItem,    setEditItem]    = useState(null)
   const [drawer,      setDrawer]      = useState(null)
+  const [exitStudent, setExitStudent] = useState(null)
+  const [showAlumni,  setShowAlumni]  = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -468,6 +486,7 @@ export default function Students() {
       const params = {}
       if (classFilter !== 'All') params.class = classFilter
       if (search.trim())         params.search = search.trim()
+      if (showAlumni)            params.archived = 1
       const [statsRes, listRes] = await Promise.allSettled([
         getStudentStats(),
         getStudents({ ...params, limit:200 }),
@@ -481,7 +500,7 @@ export default function Students() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { load() }, [classFilter])
+  useEffect(() => { load() }, [classFilter, showAlumni])
   useEffect(() => {
     const t = setTimeout(() => load(), 400)
     return () => clearTimeout(t)
@@ -492,6 +511,11 @@ export default function Students() {
     if (!confirm(`Deactivate ${student.name}?`)) return
     try { await updateStudent(student.id, { status:'Inactive' }); setDrawer(null); load() }
     catch (err) { alert(err.response?.data?.message || 'Failed') }
+  }
+  const handleReactivate = async (student) => {
+    if (!confirm(`Reactivate ${student.name}? This undoes the exit and returns them to the active list.`)) return
+    try { await api.post(`/students/${student.id}/reactivate`); setDrawer(null); load() }
+    catch (err) { alert(err.response?.data?.message || 'Failed to reactivate') }
   }
 
   const uniqueClasses = ['All', ...new Set(students.map(s => s.class).filter(Boolean).sort())]
@@ -540,6 +564,14 @@ export default function Students() {
           <select className="input" style={{ width:160 }} value={classFilter} onChange={e => setClassFilter(e.target.value)}>
             {uniqueClasses.map(c => <option key={c}>{c}</option>)}
           </select>
+          <div style={{ display:'inline-flex', border:'1.5px solid #e5e7eb', borderRadius:10, overflow:'hidden' }}>
+            <button onClick={() => setShowAlumni(false)}
+              style={{ padding:'8px 14px', fontSize:13, fontWeight:600, border:'none', cursor:'pointer',
+                background: !showAlumni ? '#12a38a' : '#fff', color: !showAlumni ? '#fff' : '#6b7280' }}>Active</button>
+            <button onClick={() => setShowAlumni(true)}
+              style={{ padding:'8px 14px', fontSize:13, fontWeight:600, border:'none', cursor:'pointer',
+                background: showAlumni ? '#12a38a' : '#fff', color: showAlumni ? '#fff' : '#6b7280' }}>Alumni / Exited</button>
+          </div>
           <span style={{ fontSize:12, color:'var(--c-muted)', marginLeft:'auto' }}>{total} shown</span>
         </div>
 
@@ -610,10 +642,17 @@ export default function Students() {
       {drawer && (
         <StudentDrawer student={drawer} onClose={() => setDrawer(null)}
           onEdit={s => { setDrawer(null); setEditItem(s); setShowModal(true) }}
+          onExit={s => { setDrawer(null); setExitStudent(s) }}
+          onReactivate={handleReactivate}
           onDelete={handleDelete} />
       )}
       {showModal && (
         <StudentModal initial={editItem} onClose={() => { setShowModal(false); setEditItem(null) }} onSaved={handleSaved} />
+      )}
+      {exitStudent && (
+        <StudentExitModal student={exitStudent}
+          onClose={() => setExitStudent(null)}
+          onDone={() => { setExitStudent(null); load() }} />
       )}
 
       <style>{`

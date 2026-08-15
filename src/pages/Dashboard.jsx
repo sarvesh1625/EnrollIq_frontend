@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import AIScoreBadge from '../components/AIScoreBadge'
+import YearSwitcher from '../components/YearSwitcher'
+import AssistantWidget from '../components/AssistantWidget'
 import { getLeadStats, getLeads } from '../api/leads'
 import { getAdmissionStats } from '../api/admissions'
 import { getFeeStats } from '../api/fees'
@@ -72,12 +74,13 @@ export default function Dashboard() {
       let ok = false
       if (r[0].status === 'fulfilled') {
         const ls = r[0].value.data; setStats(ls); ok = true
+        const sc = ls.status_counts || {}
         setPipeline([
-          { label:'New',       count: ls.today_leads || 0,                          color:'#9ca3af' },
-          { label:'Contacted', count: Math.round((ls.total_leads||0)*0.25) || 0,   color:'#60a5fa' },
-          { label:'Visit',     count: ls.visits_booked || 0,                        color:'#fbbf24' },
-          { label:'Admission', count: ls.admissions || 0,                           color:'#22c55e' },
-          { label:'Lost',      count: Math.round((ls.total_leads||0)*0.08) || 0,    color:'#f87171' },
+          { label:'New',       count: sc['New'] || 0,           color:'#9ca3af' },
+          { label:'Contacted', count: sc['Contacted'] || 0,     color:'#60a5fa' },
+          { label:'Visit',     count: sc['Campus Visit'] || 0,  color:'#fbbf24' },
+          { label:'Admission', count: sc['Admission'] || 0,     color:'#22c55e' },
+          { label:'Lost',      count: sc['Lost'] || 0,          color:'#f87171' },
         ])
       }
       if (r[1].status === 'fulfilled') setFeeStats(r[1].value.data)
@@ -113,6 +116,7 @@ export default function Dashboard() {
             <p style={{ color:'var(--c-muted)', fontSize:13, margin:'6px 0 0' }}>{today}</p>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+            <YearSwitcher variant="dashboard" />
             <span className={`badge ${apiOnline ? 'badge-green' : 'badge-gray'}`}>
               <span style={{ width:6, height:6, borderRadius:'50%', background: apiOnline ? 'var(--c-green)' : '#9ca3af', marginRight:6, display:'inline-block' }} />
               {apiOnline ? 'Live' : 'Demo'}
@@ -280,6 +284,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+          <AssistantWidget />
     </Layout>
   )
 }

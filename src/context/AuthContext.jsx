@@ -9,6 +9,23 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Super admin impersonation: ?impersonate=<token> logs in as the school admin
+    const params = new URLSearchParams(window.location.search)
+    const impToken = params.get('impersonate')
+    if (impToken) {
+      const cleanUrl = window.location.pathname
+      window.history.replaceState({}, '', cleanUrl)
+      api.get('/auth/me', { headers: { Authorization: `Bearer ${impToken}` } })
+        .then(res => {
+          setUser(res.data); setToken(impToken)
+          localStorage.setItem('token', impToken)
+          localStorage.setItem('user', JSON.stringify(res.data))
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false))
+      return
+    }
+
     const savedToken = localStorage.getItem('token')
     const savedUser  = localStorage.getItem('user')
     if (!savedToken || !savedUser) { setLoading(false); return }

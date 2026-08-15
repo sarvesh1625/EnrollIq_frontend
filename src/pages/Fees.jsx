@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import Layout from '../components/Layout'
 import api from '../api/axios'
 
+const GRADES_LIST = ['Pre-LKG','Nursery','LKG','UKG','Pre-KG','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10']
+
 const feesApi = {
   getStats:      ()        => api.get('/fees/stats'),
   getPayments:   (p)       => api.get('/fees/payments', { params: p }),
@@ -251,6 +253,7 @@ export default function Fees() {
   const [total,      setTotal]     = useState(0)
   const [loading,    setLoading]   = useState(true)
   const [statusFilter,setStatusFilter] = useState('All')
+  const [classFilter, setClassFilter]  = useState('All')
   const [search,     setSearch]    = useState('')
   const [toast,      setToast]     = useState('')
   const [showCreate,    setShowCreate]    = useState(false)
@@ -264,6 +267,7 @@ export default function Fees() {
     try {
       const params = {}
       if (statusFilter !== 'All') params.status = statusFilter
+      if (classFilter !== 'All')  params.class  = classFilter
       if (search.trim())         params.search  = search.trim()
       const [statsRes, paymentsRes, structsRes, studsRes] = await Promise.allSettled([
         feesApi.getStats(), feesApi.getPayments(params), feesApi.getStructures(), feesApi.getStudents(),
@@ -276,7 +280,7 @@ export default function Fees() {
     finally { setLoading(false) }
   }
 
-  useEffect(() => { loadAll() }, [statusFilter])
+  useEffect(() => { loadAll() }, [statusFilter, classFilter])
   useEffect(() => { const t = setTimeout(loadAll, 400); return () => clearTimeout(t) }, [search])
 
   const handleSaved = msg => { showToast(msg); setShowCreate(false); setShowRecord(null); setShowStructure(false); loadAll() }
@@ -345,6 +349,9 @@ export default function Fees() {
           <>
             <div style={{ display:'flex', gap:10, marginBottom:16, flexWrap:'wrap', alignItems:'center' }}>
               <input className="input" style={{ maxWidth:240 }} placeholder="Search student..." value={search} onChange={e => setSearch(e.target.value)} />
+              <select className="input" style={{ maxWidth:150 }} value={classFilter} onChange={e => setClassFilter(e.target.value)}>
+                {['All', ...GRADES_LIST].map(g => <option key={g} value={g}>{g === 'All' ? 'All classes' : g}</option>)}
+              </select>
               <div style={{ display:'flex', gap:3, background:'white', border:'1px solid var(--c-border-2)', borderRadius:8, padding:3, overflowX:'auto' }}>
                 {['All','Paid','Pending','Overdue','Partial'].map(s => (
                   <button key={s} onClick={() => setStatusFilter(s)}

@@ -12,7 +12,7 @@ const saApi = {
   resetPass:    (uid,pw,tok)=>api.post(`/superadmin/reset-password/${uid}`,{new_password:pw},{ headers:{ Authorization:`Bearer ${tok}` } }),
 }
 
-const PLAN_STYLE   = { Basic:{ bg:'#f3f4f6',text:'#6b7280' }, Pro:{ bg:'#eff6ff',text:'#2563eb' }, Enterprise:{ bg:'#fdf4ff',text:'#7c3aed' } }
+const PLAN_STYLE   = { basic:{ bg:'#f3f4f6',text:'#6b7280' }, premium:{ bg:'#eff6ff',text:'#2563eb' }, enterprise:{ bg:'#fdf4ff',text:'#7c3aed' } }
 const STATUS_STYLE = { Active:{ bg:'#f0fdf4',text:'#15803d' }, Suspended:{ bg:'#fef2f2',text:'#dc2626' }, Trial:{ bg:'#fffbeb',text:'#b45309' } }
 
 function fmtMoney(n) {
@@ -192,6 +192,59 @@ function AddSchoolModal({ token, onClose, onSaved }) {
 }
 
 // ── School Drawer ─────────────────────────────────────────────────────────────
+const FEATURE_LABELS = { ai_assistant:'AI Assistant (chatbot)', ai_exam_system:'AI Exam System' }
+
+function FeatureToggles({ schoolId, token, onToast }) {
+  const [state, setState] = useState(null)
+  const load = () => api.get(`/features/school/${schoolId}`, { headers:{ Authorization:`Bearer ${token}` } })
+    .then(r => setState(r.data)).catch(()=>setState({ features:{}, all_features:[] }))
+  useEffect(() => { load() }, [schoolId])
+
+  const toggle = async (key, val) => {
+    try {
+      await api.put(`/features/school/${schoolId}/override`,
+        { feature_key:key, enabled:val }, { headers:{ Authorization:`Bearer ${token}` } })
+      onToast && onToast(`${FEATURE_LABELS[key]||key} ${val?'enabled':'disabled'}`)
+      load()
+    } catch { onToast && onToast('Could not update feature') }
+  }
+  const clearOverride = async (key) => {
+    try {
+      await api.put(`/features/school/${schoolId}/override`,
+        { feature_key:key, enabled:null }, { headers:{ Authorization:`Bearer ${token}` } })
+      onToast && onToast('Reverted to plan default')
+      load()
+    } catch {}
+  }
+
+  if (!state) return null
+  const feats = state.all_features?.length ? state.all_features : Object.keys(state.features||{})
+  return (
+    <div className="card !p-4">
+      <p className="text-xs font-bold text-gray-400 uppercase mb-3">Features</p>
+      <p className="text-xs text-gray-400 mb-3">Plan sets defaults. Toggle to override for this school.</p>
+      {feats.map(key => {
+        const on = !!state.features?.[key]
+        return (
+          <div key={key} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+            <span className="text-sm text-ink font-medium">{FEATURE_LABELS[key] || key}</span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => toggle(key, !on)}
+                className={`w-11 h-6 rounded-full transition-all relative ${on?'bg-brand-600':'bg-gray-200'}`}
+                style={{ background: on ? '#12a38a' : '#e5e7eb' }}>
+                <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all"
+                  style={{ left: on ? '22px' : '2px' }} />
+              </button>
+              <button onClick={() => clearOverride(key)} title="Revert to plan default"
+                className="text-xs text-gray-400 hover:text-gray-600">reset</button>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function SchoolDrawer({ school, token, onClose, onUpdated }) {
   const [data,   setData]   = useState(null)
   const [loading,setLoading]= useState(true)
@@ -229,7 +282,7 @@ function SchoolDrawer({ school, token, onClose, onUpdated }) {
   }
 
   const handlePlan = async plan => {
-    await saApi.updateSchool(school.id, { subscription_plan: plan }, token)
+    await saApi.updateSchool(school.id, { subscription_plan: plan.toLowerCase() }, token)
     showToast(`Plan updated to ${plan}`)
     onUpdated()
   }
@@ -348,16 +401,17 @@ function SchoolDrawer({ school, token, onClose, onUpdated }) {
                   <div className="card !p-4">
                     <p className="text-xs font-bold text-gray-400 uppercase mb-3">Current plan</p>
                     <div className="flex gap-2">
-                      {['Basic','Pro','Enterprise'].map(plan => (
+                      {['basic','premium','enterprise'].map(plan => (
                         <button key={plan} onClick={() => handlePlan(plan)}
-                          className={`flex-1 py-3 text-sm font-bold rounded-xl border-2 transition-all ${
-                            (data.school.subscription_plan||'Basic') === plan
+                          className={`flex-1 py-3 text-sm font-bold rounded-xl border-2 transition-all capitalize ${
+                            (data.school.subscription_plan||'basic').toLowerCase() === plan
                               ? 'bg-ink text-white border-ink'
                               : 'border-gray-100 text-gray-500 hover:border-gray-300'
                           }`}>{plan}</button>
                       ))}
                     </div>
                   </div>
+                  <FeatureToggles schoolId={school.id} token={token} onToast={showToast} />
                   <div className="card !p-4">
                     <p className="text-xs font-bold text-gray-400 uppercase mb-3">Set rating</p>
                     <div className="flex gap-2">
@@ -455,26 +509,26 @@ function SuperDashboard({ token, admin, onLogout }) {
 
       {/* Header */}
       <div className="bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-20" style={{padding:"14px 20px"}}>
-        <div className="flex items-center gap-3">
-          <h1 className="font-serif text-2xl font-bold text-ink">Enroll<span className="text-brand-600">IQ</span></h1>
-          <span className="text-xs bg-purple-50 text-purple-700 font-bold px-3 py-1 rounded-full">⚡ Super Admin</span>
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <h1 className="font-serif text-xl sm:text-2xl font-bold text-ink whitespace-nowrap">Enroll<span className="text-brand-600">IQ</span></h1>
+          <span className="text-xs bg-purple-50 text-purple-700 font-bold px-2 sm:px-3 py-1 rounded-full whitespace-nowrap">⚡ Super Admin</span>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-400">👋 {admin.name}</span>
-          <a href="/discover" target="_blank" className="btn-ghost text-sm">🌐 Discovery page</a>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <span className="text-sm text-gray-400 hidden md:inline">👋 {admin.name}</span>
+          <a href="/discover" target="_blank" className="btn-ghost text-sm hidden sm:inline-flex">🌐 Discovery</a>
           <button onClick={onLogout} className="btn-ghost text-sm">Logout</button>
         </div>
       </div>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <div className="sa-sidebar bg-white border-r border-gray-100 flex-shrink-0" style={{width:208,minHeight:"100vh",padding:"24px 12px 12px"}}>
+      <div className="flex flex-col md:flex-row">
+        {/* Sidebar — horizontal tab bar on mobile, vertical on desktop */}
+        <div className="sa-sidebar bg-white border-b md:border-b-0 md:border-r border-gray-100 flex-shrink-0 flex md:flex-col gap-1 md:gap-0 md:w-52 md:min-h-screen px-3 py-2 md:py-6">
           {[
             { key:'dashboard', icon:'▦', label:'Dashboard' },
             { key:'schools',   icon:'🏫', label:'Schools'   },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={'sidebar-link w-full ' + (tab===t.key ? 'active' : '')}>
+              className={'sidebar-link flex-1 md:w-full ' + (tab===t.key ? 'active' : '')}>
               <span className="text-sm w-5 text-center">{t.icon}</span>
               {t.label}
             </button>
@@ -482,17 +536,17 @@ function SuperDashboard({ token, admin, onLogout }) {
         </div>
 
         {/* Content */}
-        <div className="flex-1" style={{padding:"24px",minWidth:0}}>
+        <div className="flex-1 p-4 sm:p-6" style={{minWidth:0}}>
 
           {/* Dashboard */}
           {tab === 'dashboard' && (
             <>
               <div className="mb-6">
-                <h2 className="font-serif text-3xl font-bold text-ink">Platform Overview</h2>
+                <h2 className="font-serif text-2xl sm:text-3xl font-bold text-ink">Platform Overview</h2>
                 <p className="text-gray-400 text-sm mt-1">All schools · live data</p>
               </div>
 
-              <div className="grid grid-cols-3 lg:grid-cols-6 gap-4 mb-8 g-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-8">
                 {[
                   { label:'Schools',    value: ps.total_schools||0,            color:'text-ink'       },
                   { label:'Students',   value: ps.total_students||0,           color:'text-brand-600' },
@@ -534,7 +588,7 @@ function SuperDashboard({ token, admin, onLogout }) {
                         <td className="px-5 py-3 text-xs text-gray-500">{sc.total_leads||0}</td>
                         <td className="px-5 py-3 text-xs text-green-600 font-semibold">{fmtMoney(sc.total_collected)}</td>
                         <td className="px-5 py-3">
-                          <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:12, background:(PLAN_STYLE[sc.subscription_plan]||PLAN_STYLE.Basic).bg, color:(PLAN_STYLE[sc.subscription_plan]||PLAN_STYLE.Basic).text }}>{sc.subscription_plan||'Basic'}</span>
+                          <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:12, background:(PLAN_STYLE[(sc.subscription_plan||'basic').toLowerCase()]||PLAN_STYLE.basic).bg, color:(PLAN_STYLE[(sc.subscription_plan||'basic').toLowerCase()]||PLAN_STYLE.basic).text }}>{sc.subscription_plan||'Basic'}</span>
                         </td>
                         <td className="px-5 py-3">
                           <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:12, background:(STATUS_STYLE[sc.status]||STATUS_STYLE.Active).bg, color:(STATUS_STYLE[sc.status]||STATUS_STYLE.Active).text }}>{sc.status||'Active'}</span>
@@ -552,7 +606,7 @@ function SuperDashboard({ token, admin, onLogout }) {
             <>
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="font-serif text-3xl font-bold text-ink">Schools</h2>
+                  <h2 className="font-serif text-2xl sm:text-3xl font-bold text-ink">Schools</h2>
                   <p className="text-gray-400 text-sm mt-1">{schools.length} schools on platform</p>
                 </div>
                 <button onClick={() => setShowAdd(true)} className="btn-primary">+ Add School</button>
@@ -598,7 +652,7 @@ function SuperDashboard({ token, admin, onLogout }) {
                         <td className="px-5 py-3 text-xs text-gray-500">{sc.total_leads||0}</td>
                         <td className="px-5 py-3 text-xs text-green-600 font-semibold">{fmtMoney(sc.total_collected)}</td>
                         <td className="px-5 py-3">
-                          <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:12, background:(PLAN_STYLE[sc.subscription_plan]||PLAN_STYLE.Basic).bg, color:(PLAN_STYLE[sc.subscription_plan]||PLAN_STYLE.Basic).text }}>{sc.subscription_plan||'Basic'}</span>
+                          <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:12, background:(PLAN_STYLE[(sc.subscription_plan||'basic').toLowerCase()]||PLAN_STYLE.basic).bg, color:(PLAN_STYLE[(sc.subscription_plan||'basic').toLowerCase()]||PLAN_STYLE.basic).text }}>{sc.subscription_plan||'Basic'}</span>
                         </td>
                         <td className="px-5 py-3">
                           <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:12, background:(STATUS_STYLE[sc.status]||STATUS_STYLE.Active).bg, color:(STATUS_STYLE[sc.status]||STATUS_STYLE.Active).text }}>{sc.status||'Active'}</span>
