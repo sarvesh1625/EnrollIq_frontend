@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
+import BranchSwitcher from './BranchSwitcher'
 
 const ROLE_ALLOWED = {
   admin:             null,
@@ -108,6 +109,9 @@ export default function Sidebar({ onClose, mobile }) {
           </div>
         </div>
       </div>
+
+      {/* Branch switcher (enterprise multi-branch; shows only if 2+ branches) */}
+      {role === 'admin' && <BranchSwitcher variant="sidebar" />}
 
       {/* Nav */}
       <nav className="sb-nav">
