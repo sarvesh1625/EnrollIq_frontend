@@ -67,6 +67,7 @@ export default function LandingPage() {
   const [areaFilter, setAreaFilter]   = useState('All areas')
   const [selectedSchool, setSelectedSchool] = useState(null)
   const [visible, setVisible]         = useState(false)
+  const [menuOpen, setMenuOpen]       = useState(false)
   const [form, setForm]               = useState({ parent_name:'', phone:'', email:'', child_grade:'', message:'' })
   const [formStatus, setFormStatus]   = useState('idle')
   const [errorMsg, setErrorMsg]       = useState('')
@@ -141,16 +142,16 @@ export default function LandingPage() {
         <a href="/" style={{ textDecoration:'none', display:'inline-flex' }}>
   <img src={logo} alt="EnrollIQ" style={{ height:34, display:'block', borderRadius:8, background:'#fff', padding:'5px 10px' }} />
 </a>
-        <div style={{ display:'flex', gap:24, alignItems:'center' }}>
+        <div className="lp-nav-links" style={{ display:'flex', gap:24, alignItems:'center' }}>
           {[['How it works','#how'], ['About','#about'], ['Contact','#contact']].map(([l, href]) => (
-            <a key={l} href={href} className="lp-link" style={{ fontSize:13, color:'rgba(245,242,235,0.5)', textDecoration:'none', transition:'color 0.2s' }}
+            <a key={l} href={href} style={{ fontSize:13, color:'rgba(245,242,235,0.5)', textDecoration:'none', transition:'color 0.2s' }}
               onMouseEnter={e=>e.target.style.color='#f5f2eb'}
               onMouseLeave={e=>e.target.style.color='rgba(245,242,235,0.5)'}
             >{l}</a>
           ))}
           <a href="/login" style={{
             background:'#12a38a', color:'#fff', textDecoration:'none',
-            padding:'8px 20px', borderRadius:4, fontSize:13, fontWeight:500,
+            padding:'8px 20px', borderRadius:6, fontSize:13, fontWeight:600,
             transition:'background 0.2s',
           }}
             onMouseEnter={e=>e.currentTarget.style.background='#0d8571'}
@@ -159,10 +160,32 @@ export default function LandingPage() {
             School login
           </a>
         </div>
+
+        {/* Mobile menu button */}
+        <button className="lp-menu-btn" onClick={() => setMenuOpen(o => !o)} aria-label="Menu"
+          style={{ display:'none', background:'rgba(245,242,235,0.06)', border:'1px solid rgba(245,242,235,0.12)',
+            borderRadius:8, width:42, height:42, color:'#f5f2eb', fontSize:20, cursor:'pointer', alignItems:'center', justifyContent:'center' }}>
+          {menuOpen ? '✕' : '☰'}
+        </button>
       </nav>
 
+      {/* Mobile menu panel */}
+      {menuOpen && (
+        <div style={{ position:'fixed', top:64, left:0, right:0, zIndex:90,
+          background:'#141414', borderBottom:'1px solid rgba(245,242,235,0.1)',
+          padding:'16px clamp(16px,5vw,48px)', display:'flex', flexDirection:'column', gap:4 }}>
+          {[['How it works','#how'], ['About','#about'], ['Contact','#contact']].map(([l, href]) => (
+            <a key={l} href={href} onClick={() => setMenuOpen(false)}
+              style={{ fontSize:15, color:'rgba(245,242,235,0.75)', textDecoration:'none', padding:'12px 4px', borderBottom:'1px solid rgba(245,242,235,0.05)' }}>{l}</a>
+          ))}
+          <a href="/login" onClick={() => setMenuOpen(false)}
+            style={{ marginTop:8, background:'#12a38a', color:'#fff', textDecoration:'none', textAlign:'center',
+              padding:'12px', borderRadius:8, fontSize:14, fontWeight:600 }}>School login</a>
+        </div>
+      )}
+
       {/* HERO */}
-      <section style={{ padding:'120px clamp(16px,5vw,48px) 60px', textAlign:'center', position:'relative' }}>
+      <section className="lp-hero" style={{ padding:'120px clamp(16px,5vw,48px) 60px', textAlign:'center', position:'relative' }}>
         <div style={{
           position:'absolute', top:'20%', left:'50%', transform:'translateX(-50%)',
           width:'60vw', height:'40vw',
@@ -182,7 +205,7 @@ export default function LandingPage() {
             <span style={{ width:20, height:1, background:'#12a38a', display:'block' }}/>
           </div>
 
-          <h1 style={{
+          <h1 className="lp-h1" style={{
             fontFamily:"'Fraunces',serif",
             fontSize:'clamp(44px, 6vw, 76px)',
             fontWeight:900, lineHeight:1.0, letterSpacing:'-2.5px',
@@ -197,7 +220,7 @@ export default function LandingPage() {
           </p>
 
           {/* Search bar */}
-          <div style={{
+          <div className="lp-search" style={{
             display:'flex', maxWidth:540, margin:'0 auto',
             background:'rgba(245,242,235,0.07)',
             border:'1px solid rgba(245,242,235,0.15)',
@@ -398,9 +421,9 @@ export default function LandingPage() {
           </p>
           <div className="lp-contact-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
             {[
-              ['✉️','Email us','hello@enrolliq.com','mailto:hello@enrolliq.com'],
-              ['📞','Call us','+91 98765 43210','tel:+919876543210'],
-              ['💬','WhatsApp','Chat with our team','https://wa.me/919876543210'],
+              ['✉️','Email us','Info@enrolliq.io','mailto:Info@enrolliq.io'],
+              ['📞','Call us','+91 81423-41234','tel:+918142341234'],
+              ['💬','WhatsApp','Chat with our team','https://wa.me/918142341234'],
             ].map(([icon, title, value, href]) => (
               <a key={title} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noreferrer"
                 style={{ border:'1px solid rgba(245,242,235,0.1)', borderRadius:14, padding:'26px 20px',
@@ -446,8 +469,8 @@ export default function LandingPage() {
           </div>
           <div>
             <p style={{ fontSize:11, fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(245,242,235,0.35)', marginBottom:14 }}>Contact</p>
-            <p style={{ fontSize:13, color:'rgba(245,242,235,0.5)', marginBottom:9 }}>✉️ hello@enrolliq.com</p>
-            <p style={{ fontSize:13, color:'rgba(245,242,235,0.5)', marginBottom:9 }}>📞 +91 98765 43210</p>
+            <p style={{ fontSize:13, color:'rgba(245,242,235,0.5)', marginBottom:9 }}>✉️ Info@enrolliq.io</p>
+            <p style={{ fontSize:13, color:'rgba(245,242,235,0.5)', marginBottom:9 }}>📞 +91 81423-41234</p>
             <p style={{ fontSize:13, color:'rgba(245,242,235,0.5)', lineHeight:1.6 }}>📍 Hyderabad, Telangana, India</p>
           </div>
         </div>
@@ -565,19 +588,33 @@ export default function LandingPage() {
 
       <style>{`
         html { scroll-behavior: smooth; }
+        * { -webkit-tap-highlight-color: transparent; }
+
+        @media (max-width: 980px) {
+          .lp-how { grid-template-columns: 1fr 1fr !important; gap: 36px !important; }
+          .lp-contact-grid { grid-template-columns: 1fr 1fr !important; }
+        }
         @media (max-width: 900px) {
-          .lp-footer-grid { grid-template-columns: 1fr 1fr !important; }
+          .lp-footer-grid { grid-template-columns: 1fr 1fr !important; row-gap: 36px !important; }
+        }
+        @media (max-width: 760px) {
+          .lp-nav-links { display: none !important; }
+          .lp-menu-btn { display: inline-flex !important; }
         }
         @media (max-width: 700px) {
-          .lp-how { grid-template-columns: 1fr !important; gap: 44px !important; }
+          .lp-how { grid-template-columns: 1fr !important; gap: 40px !important; }
           .lp-about-grid { grid-template-columns: 1fr !important; }
           .lp-contact-grid { grid-template-columns: 1fr !important; }
+          .lp-hero { padding-top: 96px !important; }
+          .lp-h1 { font-size: clamp(36px, 11vw, 52px) !important; letter-spacing: -1.5px !important; }
+        }
+        @media (max-width: 560px) {
+          .lp-search { flex-direction: column !important; background: transparent !important; border: none !important; gap: 10px !important; }
+          .lp-search input { background: rgba(245,242,235,0.07) !important; border: 1px solid rgba(245,242,235,0.15) !important; border-radius: 10px !important; }
+          .lp-search button { border-radius: 10px !important; padding: 14px !important; }
         }
         @media (max-width: 520px) {
           .lp-footer-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
-        }
-        @media (max-width: 640px) {
-          .lp-link { display: none; }
         }
       `}</style>
     </div>
