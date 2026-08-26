@@ -138,7 +138,7 @@ export function GeneratePaperModal({ exam, subjects, onClose, showToast }) {
                       <p className="text-sm font-medium text-ink">Q{q.question_number}. {q.question_text}</p>
                       <span className="badge badge-gray" style={{ flexShrink:0 }}>{q.marks} marks</span>
                     </div>
-                    {q.options && (
+                    {Array.isArray(q.options) && q.options.length > 0 && (
                       <div style={{ marginTop:6, display:'flex', flexDirection:'column', gap:2 }}>
                         {q.options.map((o, i) => <p key={i} className="text-xs text-gray-500">{o}</p>)}
                       </div>
