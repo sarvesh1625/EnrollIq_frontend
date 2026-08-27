@@ -1,637 +1,579 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
-// import  from '../components/Logo'
-import logo from '../assets/logo.jpeg'
+
+// Logo lives in /public — Vite serves it at the root
+const logo = '/Logo.jpeg'
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
-const GRADES = [
-  'Pre-KG','LKG','UKG',
-  'Grade 1','Grade 2','Grade 3','Grade 4','Grade 5',
-  'Grade 6','Grade 7','Grade 8','Grade 9','Grade 10',
-]
+const TYPE = {
+  display: "'Fraunces', Georgia, serif",
+  body: "'Inter', -apple-system, system-ui, sans-serif",
+}
+const C = {
+  paper:  '#FAFAFE',
+  ink:    '#1A1145',   // deep indigo (matches logo's dark violet)
+  teal:   '#6D28D9',   // primary brand = violet (kept name 'teal' to avoid churn)
+  tealDk: '#5B21B6',
+  blue:   '#38BDF8',   // logo cyan
+  violet: '#7C3AED',   // logo purple
+  amber:  '#38BDF8',   // accent = cyan (used for 'soon'/highlights)
+  muted:  '#5B5772',
+  line:   '#E9E6F2',
+  card:   '#FFFFFF',
+}
+// brand gradient from the logo (cyan → violet)
+const GRAD = 'linear-gradient(135deg, #38BDF8 0%, #6D28D9 100%)'
 
-// Mock schools — replace with real API: GET /api/schools/public
-const MOCK_SCHOOLS = [
-  {
-    id: 1, name: 'ABC International School', city: 'Madhapur', area: 'Hyderabad',
-    board: 'CBSE', rating: 4.8, reviews: 124, fee: '₹80,000/yr',
-    tags: ['Smart classrooms', 'Sports ground', 'AI lab'],
-    established: 2001, students: 1200,
-  },
-  {
-    id: 2, name: 'Sunrise Academy', city: 'Gachibowli', area: 'Hyderabad',
-    board: 'CBSE', rating: 4.6, reviews: 98, fee: '₹65,000/yr',
-    tags: ['Swimming pool', 'Music room', 'Transport'],
-    established: 2008, students: 900,
-  },
-  {
-    id: 3, name: 'Delhi Public School', city: 'Banjara Hills', area: 'Hyderabad',
-    board: 'CBSE', rating: 4.9, reviews: 210, fee: '₹1,20,000/yr',
-    tags: ['IIT coaching', 'International trips', 'Robotics'],
-    established: 1998, students: 2000,
-  },
-  {
-    id: 4, name: 'Greenfield International', city: 'Kondapur', area: 'Hyderabad',
-    board: 'ICSE', rating: 4.7, reviews: 86, fee: '₹95,000/yr',
-    tags: ['Theatre', 'Coding club', 'Organic garden'],
-    established: 2005, students: 750,
-  },
-  {
-    id: 5, name: 'Oakridge International', city: 'Bachupally', area: 'Hyderabad',
-    board: 'IB', rating: 4.9, reviews: 142, fee: '₹2,50,000/yr',
-    tags: ['IB curriculum', 'Global exchange', 'Olympic pool'],
-    established: 2002, students: 600,
-  },
-  {
-    id: 6, name: "St. Mary's High School", city: 'Secunderabad', area: 'Hyderabad',
-    board: 'ICSE', rating: 4.5, reviews: 177, fee: '₹55,000/yr',
-    tags: ['Heritage campus', 'Band & choir', 'NCC'],
-    established: 1965, students: 1800,
-  },
-]
+function useReveal() {
+  const ref = useRef(null)
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setShown(true); io.disconnect() } }, { threshold: 0.15 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  return [ref, shown]
+}
 
-const BOARDS = ['All', 'CBSE', 'ICSE', 'IB', 'State Board']
-const AREAS  = ['All areas', 'Madhapur', 'Gachibowli', 'Banjara Hills', 'Kondapur', 'Bachupally', 'Secunderabad']
-
-function StarRating({ rating }) {
+function Reveal({ children, delay = 0 }) {
+  const [ref, shown] = useReveal()
   return (
-    <span style={{ fontSize: 12, color: '#EF9F27', letterSpacing: 1 }}>
-      {'★'.repeat(Math.floor(rating))}{'☆'.repeat(5 - Math.floor(rating))}
-    </span>
+    <div ref={ref} style={{
+      opacity: shown ? 1 : 0,
+      transform: shown ? 'none' : 'translateY(20px)',
+      transition: `opacity .7s ease ${delay}s, transform .7s cubic-bezier(.2,.7,.2,1) ${delay}s`,
+    }}>{children}</div>
   )
 }
 
 export default function LandingPage() {
-  const [search, setSearch]           = useState('')
-  const [boardFilter, setBoardFilter] = useState('All')
-  const [areaFilter, setAreaFilter]   = useState('All areas')
-  const [selectedSchool, setSelectedSchool] = useState(null)
-  const [visible, setVisible]         = useState(false)
-  const [menuOpen, setMenuOpen]       = useState(false)
-  const [form, setForm]               = useState({ parent_name:'', phone:'', email:'', child_grade:'', message:'' })
-  const [formStatus, setFormStatus]   = useState('idle')
-  const [errorMsg, setErrorMsg]       = useState('')
-  const modalRef = useRef(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [demoOpen, setDemoOpen] = useState(false)
 
-  useEffect(() => { setTimeout(() => setVisible(true), 80) }, [])
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (modalRef.current && !modalRef.current.contains(e.target)) {
-        setSelectedSchool(null)
-        setFormStatus('idle')
-      }
-    }
-    if (selectedSchool) document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [selectedSchool])
-
-  useEffect(() => {
-    document.body.style.overflow = selectedSchool ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [selectedSchool])
-
-  const filtered = MOCK_SCHOOLS.filter(s => {
-    const q = search.toLowerCase()
-    const matchSearch = !q || s.name.toLowerCase().includes(q) || s.city.toLowerCase().includes(q) || s.board.toLowerCase().includes(q)
-    const matchBoard  = boardFilter === 'All' || s.board === boardFilter
-    const matchArea   = areaFilter === 'All areas' || s.city === areaFilter
-    return matchSearch && matchBoard && matchArea
-  })
-
-  const set = f => e => setForm(p => ({ ...p, [f]: e.target.value }))
-
-  const handleEnquiry = async (e) => {
-    e.preventDefault()
-    setFormStatus('loading')
-    setErrorMsg('')
-    try {
-      await axios.post(`${API}/leads/public`, {
-        ...form,
-        school_id: selectedSchool.id,
-        school_name: selectedSchool.name,
-        lead_source: 'Landing Page',
-      })
-      setFormStatus('success')
-      setForm({ parent_name:'', phone:'', email:'', child_grade:'', message:'' })
-    } catch (err) {
-      setFormStatus('error')
-      setErrorMsg(err.response?.data?.message || 'Something went wrong. Please try again.')
-    }
-  }
-
-  const openEnquiry = (school) => {
-    setSelectedSchool(school)
-    setFormStatus('idle')
-    setErrorMsg('')
-    setForm({ parent_name:'', phone:'', email:'', child_grade:'', message:'' })
-  }
+  const openDemo = () => { setDemoOpen(true); setMenuOpen(false) }
 
   return (
-    <div style={{ fontFamily:"'DM Sans',sans-serif", background:'#0e0d0b', color:'#f5f2eb', minHeight:'100vh', overflowX:'hidden' }}>
-
-      {/* NAV */}
-      <nav style={{
-        position:'fixed', top:0, left:0, right:0, zIndex:100,
-        display:'flex', alignItems:'center', justifyContent:'space-between',
-        padding:'14px clamp(16px,5vw,48px)',
-        background:'rgba(14,13,11,0.9)', backdropFilter:'blur(16px)',
-        borderBottom:'1px solid rgba(245,242,235,0.08)',
-      }}>
-        {/* <a href="/" style={{ textDecoration:'none' }}><Logo dark height={30} /></a> */}
-        <a href="/" style={{ textDecoration:'none', display:'inline-flex' }}>
-  <img src={logo} alt="EnrollIQ" style={{ height:34, display:'block', borderRadius:8, background:'#fff', padding:'5px 10px' }} />
-</a>
-        <div className="lp-nav-links" style={{ display:'flex', gap:24, alignItems:'center' }}>
-          {[['How it works','#how'], ['About','#about'], ['Contact','#contact']].map(([l, href]) => (
-            <a key={l} href={href} style={{ fontSize:13, color:'rgba(245,242,235,0.5)', textDecoration:'none', transition:'color 0.2s' }}
-              onMouseEnter={e=>e.target.style.color='#f5f2eb'}
-              onMouseLeave={e=>e.target.style.color='rgba(245,242,235,0.5)'}
-            >{l}</a>
-          ))}
-          <a href="/login" style={{
-            background:'#12a38a', color:'#fff', textDecoration:'none',
-            padding:'8px 20px', borderRadius:6, fontSize:13, fontWeight:600,
-            transition:'background 0.2s',
-          }}
-            onMouseEnter={e=>e.currentTarget.style.background='#0d8571'}
-            onMouseLeave={e=>e.currentTarget.style.background='#12a38a'}
-          >
-            School login
-          </a>
-        </div>
-
-        {/* Mobile menu button */}
-        <button className="lp-menu-btn" onClick={() => setMenuOpen(o => !o)} aria-label="Menu"
-          style={{ display:'none', background:'rgba(245,242,235,0.06)', border:'1px solid rgba(245,242,235,0.12)',
-            borderRadius:8, width:42, height:42, color:'#f5f2eb', fontSize:20, cursor:'pointer', alignItems:'center', justifyContent:'center' }}>
-          {menuOpen ? '✕' : '☰'}
-        </button>
-      </nav>
-
-      {/* Mobile menu panel */}
-      {menuOpen && (
-        <div style={{ position:'fixed', top:64, left:0, right:0, zIndex:90,
-          background:'#141414', borderBottom:'1px solid rgba(245,242,235,0.1)',
-          padding:'16px clamp(16px,5vw,48px)', display:'flex', flexDirection:'column', gap:4 }}>
-          {[['How it works','#how'], ['About','#about'], ['Contact','#contact']].map(([l, href]) => (
-            <a key={l} href={href} onClick={() => setMenuOpen(false)}
-              style={{ fontSize:15, color:'rgba(245,242,235,0.75)', textDecoration:'none', padding:'12px 4px', borderBottom:'1px solid rgba(245,242,235,0.05)' }}>{l}</a>
-          ))}
-          <a href="/login" onClick={() => setMenuOpen(false)}
-            style={{ marginTop:8, background:'#12a38a', color:'#fff', textDecoration:'none', textAlign:'center',
-              padding:'12px', borderRadius:8, fontSize:14, fontWeight:600 }}>School login</a>
-        </div>
-      )}
-
-      {/* HERO */}
-      <section className="lp-hero" style={{ padding:'120px clamp(16px,5vw,48px) 60px', textAlign:'center', position:'relative' }}>
-        <div style={{
-          position:'absolute', top:'20%', left:'50%', transform:'translateX(-50%)',
-          width:'60vw', height:'40vw',
-          background:'radial-gradient(ellipse, rgba(18,163,138,0.1) 0%, transparent 70%)',
-          borderRadius:'50%', pointerEvents:'none',
-        }}/>
-        <div style={{
-          opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(24px)',
-          transition:'opacity 0.7s ease, transform 0.7s ease',
-        }}>
-          <div style={{
-            display:'inline-flex', alignItems:'center', gap:8, marginBottom:24,
-            fontSize:11, fontWeight:500, letterSpacing:'0.14em', textTransform:'uppercase', color:'#12a38a',
-          }}>
-            <span style={{ width:20, height:1, background:'#12a38a', display:'block' }}/>
-            Find the right school for your child
-            <span style={{ width:20, height:1, background:'#12a38a', display:'block' }}/>
-          </div>
-
-          <h1 className="lp-h1" style={{
-            fontFamily:"'Fraunces',serif",
-            fontSize:'clamp(44px, 6vw, 76px)',
-            fontWeight:900, lineHeight:1.0, letterSpacing:'-2.5px',
-            marginBottom:20, color:'#f5f2eb',
-          }}>
-            Discover the best schools<br />
-            in <em style={{ fontStyle:'italic', fontWeight:300, color:'#12a38a' }}>Hyderabad.</em>
-          </h1>
-
-          <p style={{ fontSize:16, color:'rgba(245,242,235,0.5)', maxWidth:480, margin:'0 auto 44px', lineHeight:1.7 }}>
-            Browse top CBSE, ICSE and IB schools. Send your enquiry directly — the school's admissions team calls you within 24 hours.
-          </p>
-
-          {/* Search bar */}
-          <div className="lp-search" style={{
-            display:'flex', maxWidth:540, margin:'0 auto',
-            background:'rgba(245,242,235,0.07)',
-            border:'1px solid rgba(245,242,235,0.15)',
-            borderRadius:10, overflow:'hidden',
-          }}>
-            <input style={{
-              flex:1, background:'transparent', border:'none', outline:'none',
-              padding:'14px 20px', fontSize:15, color:'#f5f2eb',
-            }}
-              placeholder="Search school name, area, or board..."
-              value={search} onChange={e => setSearch(e.target.value)}
-            />
-            <button style={{
-              background:'#12a38a', border:'none', color:'#fff',
-              padding:'14px 24px', fontSize:14, fontWeight:500, cursor:'pointer',
-            }}>
-              Search
-            </button>
-          </div>
-
-          {/* Stats */}
-          <div style={{ display:'flex', justifyContent:'center', gap:'clamp(24px,6vw,48px)', marginTop:48, flexWrap:'wrap' }}>
-            {[['200+','Schools listed'],['50,000+','Parent enquiries'],['15+','Cities']].map(([n,l])=>(
-              <div key={l}>
-                <p style={{ fontFamily:"'Fraunces',serif", fontSize:28, fontWeight:700, color:'#f5f2eb', margin:0 }}>{n}</p>
-                <p style={{ fontSize:12, color:'rgba(245,242,235,0.4)', margin:'4px 0 0' }}>{l}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FILTERS + GRID */}
-      <section id="schools" style={{ padding:'20px clamp(16px,5vw,48px) 100px' }}>
-        {/* Filters */}
-        <div style={{ display:'flex', gap:12, marginBottom:28, flexWrap:'wrap', alignItems:'center' }}>
-          <span style={{ fontSize:13, color:'rgba(245,242,235,0.4)' }}>Filter:</span>
-          <div style={{ display:'flex', gap:4, background:'rgba(245,242,235,0.05)', borderRadius:8, padding:4 }}>
-            {BOARDS.map(b => (
-              <button key={b} onClick={()=>setBoardFilter(b)} style={{
-                padding:'6px 14px', borderRadius:6, border:'none', fontSize:12, fontWeight:500, cursor:'pointer', transition:'all 0.15s',
-                background: boardFilter===b ? '#12a38a' : 'transparent',
-                color: boardFilter===b ? '#fff' : 'rgba(245,242,235,0.5)',
-              }}>{b}</button>
-            ))}
-          </div>
-          <select value={areaFilter} onChange={e=>setAreaFilter(e.target.value)} style={{
-            background:'rgba(245,242,235,0.07)', border:'1px solid rgba(245,242,235,0.15)',
-            borderRadius:8, padding:'7px 14px', fontSize:12, color:'rgba(245,242,235,0.7)', outline:'none', cursor:'pointer',
-          }}>
-            {AREAS.map(a=><option key={a} value={a} style={{ background:'#1a1916' }}>{a}</option>)}
-          </select>
-          <span style={{ fontSize:12, color:'rgba(245,242,235,0.3)', marginLeft:'auto' }}>
-            {filtered.length} school{filtered.length!==1?'s':''} found
-          </span>
-        </div>
-
-        {/* School grid */}
-        {filtered.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'80px 0', color:'rgba(245,242,235,0.3)', fontSize:15 }}>
-            No schools match your search.
-          </div>
-        ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:20 }}>
-            {filtered.map((school, i) => (
-              <div key={school.id} style={{
-                border:'1px solid rgba(245,242,235,0.1)', borderRadius:14, overflow:'hidden',
-                background:'rgba(245,242,235,0.03)', transition:'border-color 0.25s, transform 0.25s',
-                opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(20px)',
-                transitionDelay:`${i*0.06}s`,
-              }}
-                onMouseEnter={e=>{ e.currentTarget.style.borderColor='rgba(18,163,138,0.35)'; e.currentTarget.style.transform='translateY(-3px)' }}
-                onMouseLeave={e=>{ e.currentTarget.style.borderColor='rgba(245,242,235,0.1)'; e.currentTarget.style.transform='none' }}
-              >
-                <div style={{ padding:'24px 24px 0' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
-                    <div style={{
-                      width:48, height:48, borderRadius:12, background:'rgba(18,163,138,0.15)',
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                      fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:700, color:'#12a38a',
-                    }}>
-                      {school.name[0]}
-                    </div>
-                    <span style={{
-                      fontSize:11, fontWeight:600, padding:'3px 10px', borderRadius:20, letterSpacing:'0.06em',
-                      background: school.board==='CBSE' ? 'rgba(29,158,117,0.15)' : school.board==='ICSE' ? 'rgba(55,138,221,0.15)' : 'rgba(186,117,23,0.2)',
-                      color: school.board==='CBSE' ? '#5DCAA5' : school.board==='ICSE' ? '#85B7EB' : '#EF9F27',
-                    }}>{school.board}</span>
-                  </div>
-                  <h3 style={{ fontFamily:"'Fraunces',serif", fontSize:19, fontWeight:700, color:'#f5f2eb', marginBottom:4, letterSpacing:'-0.3px' }}>
-                    {school.name}
-                  </h3>
-                  <p style={{ fontSize:13, color:'rgba(245,242,235,0.4)', marginBottom:12 }}>⊙ {school.city}, {school.area}</p>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
-                    <StarRating rating={school.rating}/>
-                    <span style={{ fontSize:13, fontWeight:600, color:'#f5f2eb' }}>{school.rating}</span>
-                    <span style={{ fontSize:12, color:'rgba(245,242,235,0.35)' }}>({school.reviews} reviews)</span>
-                  </div>
-                  <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:20 }}>
-                    {school.tags.map(t=>(
-                      <span key={t} style={{
-                        fontSize:11, padding:'3px 10px', borderRadius:20,
-                        background:'rgba(245,242,235,0.07)', color:'rgba(245,242,235,0.55)',
-                        border:'1px solid rgba(245,242,235,0.1)',
-                      }}>{t}</span>
-                    ))}
-                  </div>
-                </div>
-                <div style={{
-                  padding:'16px 24px', display:'flex', alignItems:'center', justifyContent:'space-between',
-                  borderTop:'1px solid rgba(245,242,235,0.07)',
-                }}>
-                  <div>
-                    <p style={{ fontSize:11, color:'rgba(245,242,235,0.35)', marginBottom:2 }}>Fees from</p>
-                    <p style={{ fontSize:15, fontWeight:600, color:'#f5f2eb' }}>{school.fee}</p>
-                  </div>
-                  <button onClick={()=>openEnquiry(school)} style={{
-                    background:'#12a38a', color:'#fff', border:'none',
-                    padding:'9px 20px', borderRadius:6, fontSize:13, fontWeight:500, cursor:'pointer', transition:'background 0.2s',
-                  }}
-                    onMouseEnter={e=>e.currentTarget.style.background='#0d8571'}
-                    onMouseLeave={e=>e.currentTarget.style.background='#12a38a'}
-                  >
-                    Enquire now
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section id="how" style={{ padding:'80px clamp(16px,5vw,48px)', borderTop:'1px solid rgba(245,242,235,0.07)', textAlign:'center' }}>
-        <p style={{ fontSize:11, fontWeight:500, letterSpacing:'0.14em', textTransform:'uppercase', color:'#12a38a', marginBottom:16 }}>How it works</p>
-        <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:'clamp(28px,3.5vw,44px)', fontWeight:900, letterSpacing:'-1px', color:'#f5f2eb', marginBottom:56 }}>
-          Get admitted in <em style={{ fontStyle:'italic', fontWeight:300, color:'#12a38a' }}>3 simple steps</em>
-        </h2>
-        <div className="lp-how" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:32, maxWidth:800, margin:'0 auto' }}>
-          {[
-            ['01','Search','Browse schools by area, board, or name and compare facilities and fees.'],
-            ['02','Enquire','Click "Enquire now" and fill your details — takes under 60 seconds.'],
-            ['03','Get called',"The school's admissions team calls you within 24 hours to book a campus visit."],
-          ].map(([num,title,desc])=>(
-            <div key={num}>
-              <div style={{ fontFamily:"'Fraunces',serif", fontSize:48, fontWeight:900, color:'rgba(18,163,138,0.2)', marginBottom:12 }}>{num}</div>
-              <h3 style={{ fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:700, color:'#f5f2eb', marginBottom:10 }}>{title}</h3>
-              <p style={{ fontSize:14, color:'rgba(245,242,235,0.45)', lineHeight:1.7 }}>{desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ABOUT */}
-      <section id="about" style={{ padding:'80px clamp(16px,5vw,48px)', borderTop:'1px solid rgba(245,242,235,0.07)' }}>
-        <div style={{ maxWidth:960, margin:'0 auto' }}>
-          <p style={{ fontSize:11, fontWeight:500, letterSpacing:'0.14em', textTransform:'uppercase', color:'#12a38a', marginBottom:16, textAlign:'center' }}>About EnrollIQ</p>
-          <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:'clamp(28px,3.5vw,44px)', fontWeight:900, letterSpacing:'-1px', color:'#f5f2eb', marginBottom:20, textAlign:'center' }}>
-            One platform. <em style={{ fontStyle:'italic', fontWeight:300, color:'#12a38a' }}>Parents & schools.</em>
-          </h2>
-          <p style={{ fontSize:15, color:'rgba(245,242,235,0.5)', lineHeight:1.8, maxWidth:640, margin:'0 auto 48px', textAlign:'center' }}>
-            EnrollIQ connects parents searching for the right school with schools looking for the right students.
-            Parents discover, compare and enquire in minutes — schools manage every enquiry, admission,
-            fee and classroom from a single AI-powered CRM + ERP.
-          </p>
-          <div className="lp-about-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
-            {[
-              ['👨‍👩‍👧','For Parents','Browse verified schools by board, area and fees. Read facilities at a glance, send an enquiry in under 60 seconds, and get a call back from the school within 24 hours — completely free.'],
-              ['🏫','For Schools','Capture every lead from Google, WhatsApp and walk-ins with AI scoring, convert admissions faster, and run attendance, fees, exams, transport and communication from one dashboard.'],
-            ].map(([icon, title, desc]) => (
-              <div key={title} style={{ border:'1px solid rgba(245,242,235,0.1)', borderRadius:14, padding:'28px', background:'rgba(245,242,235,0.03)' }}>
-                <div style={{ fontSize:28, marginBottom:14 }}>{icon}</div>
-                <h3 style={{ fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:700, color:'#f5f2eb', marginBottom:10 }}>{title}</h3>
-                <p style={{ fontSize:14, color:'rgba(245,242,235,0.45)', lineHeight:1.7 }}>{desc}</p>
-              </div>
-            ))}
-          </div>
-          <div className="lp-about-stats" style={{ display:'flex', justifyContent:'center', gap:'clamp(24px,6vw,64px)', marginTop:56, flexWrap:'wrap', textAlign:'center' }}>
-            {[['2026','Founded'],['200+','Partner schools'],['15+','Cities'],['24 hrs','Enquiry response']].map(([n, l]) => (
-              <div key={l}>
-                <p style={{ fontFamily:"'Fraunces',serif", fontSize:26, fontWeight:700, color:'#12a38a', margin:0 }}>{n}</p>
-                <p style={{ fontSize:12, color:'rgba(245,242,235,0.4)', margin:'4px 0 0' }}>{l}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CONTACT */}
-      <section id="contact" style={{ padding:'80px clamp(16px,5vw,48px)', borderTop:'1px solid rgba(245,242,235,0.07)' }}>
-        <div style={{ maxWidth:960, margin:'0 auto', textAlign:'center' }}>
-          <p style={{ fontSize:11, fontWeight:500, letterSpacing:'0.14em', textTransform:'uppercase', color:'#12a38a', marginBottom:16 }}>Contact us</p>
-          <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:'clamp(28px,3.5vw,44px)', fontWeight:900, letterSpacing:'-1px', color:'#f5f2eb', marginBottom:16 }}>
-            We'd love to <em style={{ fontStyle:'italic', fontWeight:300, color:'#12a38a' }}>hear from you</em>
-          </h2>
-          <p style={{ fontSize:15, color:'rgba(245,242,235,0.5)', lineHeight:1.8, maxWidth:520, margin:'0 auto 44px' }}>
-            Are you a school that wants to be listed on EnrollIQ, or a parent with a question? Reach us any way you like.
-          </p>
-          <div className="lp-contact-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
-            {[
-              ['✉️','Email us','Info@enrolliq.io','mailto:Info@enrolliq.io'],
-              ['📞','Call us','+91 81423-41234','tel:+918142341234'],
-              ['💬','WhatsApp','Chat with our team','https://wa.me/918142341234'],
-            ].map(([icon, title, value, href]) => (
-              <a key={title} href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noreferrer"
-                style={{ border:'1px solid rgba(245,242,235,0.1)', borderRadius:14, padding:'26px 20px',
-                  background:'rgba(245,242,235,0.03)', textDecoration:'none', transition:'border-color 0.25s, transform 0.25s', display:'block' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(18,163,138,0.35)'; e.currentTarget.style.transform = 'translateY(-3px)' }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(245,242,235,0.1)'; e.currentTarget.style.transform = 'none' }}>
-                <div style={{ fontSize:26, marginBottom:12 }}>{icon}</div>
-                <p style={{ fontSize:13, color:'rgba(245,242,235,0.4)', marginBottom:6 }}>{title}</p>
-                <p style={{ fontSize:15, fontWeight:600, color:'#f5f2eb' }}>{value}</p>
-              </a>
-            ))}
-          </div>
-          <p style={{ fontSize:13, color:'rgba(245,242,235,0.35)', marginTop:36 }}>
-            🏢 Mind Huntz Digital Services Pvt Ltd · Hyderabad, Telangana, India
-          </p>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer style={{ borderTop:'1px solid rgba(245,242,235,0.07)' }}>
-        <div className="lp-footer-grid" style={{ maxWidth:1100, margin:'0 auto', padding:'56px clamp(16px,5vw,48px) 40px',
-          display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1.4fr', gap:32 }}>
-          <div>
-            {/* <Logo dark height={26} /> */}
-            <img src={logo} alt="EnrollIQ" style={{ height:30, display:'block', borderRadius:8, background:'#fff', padding:'5px 10px' }} />
-            <p style={{ fontSize:13, color:'rgba(245,242,235,0.4)', lineHeight:1.7, marginTop:12, maxWidth:260 }}>
-              India's smart school discovery platform and all-in-one CRM + ERP for modern schools.
-            </p>
-          </div>
-          <div>
-            <p style={{ fontSize:11, fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(245,242,235,0.35)', marginBottom:14 }}>Explore</p>
-            {[['Find schools','#schools'],['How it works','#how'],['About','#about'],['Contact','#contact']].map(([l, href]) => (
-              <a key={l} href={href} style={{ display:'block', fontSize:13, color:'rgba(245,242,235,0.5)', textDecoration:'none', marginBottom:9 }}
-                onMouseEnter={e => e.target.style.color = '#f5f2eb'} onMouseLeave={e => e.target.style.color = 'rgba(245,242,235,0.5)'}>{l}</a>
-            ))}
-          </div>
-          <div>
-            <p style={{ fontSize:11, fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(245,242,235,0.35)', marginBottom:14 }}>For schools</p>
-            {[['School login','/login'],['List your school','#contact'],['Book a demo','#contact']].map(([l, href]) => (
-              <a key={l} href={href} style={{ display:'block', fontSize:13, color:'rgba(245,242,235,0.5)', textDecoration:'none', marginBottom:9 }}
-                onMouseEnter={e => e.target.style.color = '#f5f2eb'} onMouseLeave={e => e.target.style.color = 'rgba(245,242,235,0.5)'}>{l}</a>
-            ))}
-          </div>
-          <div>
-            <p style={{ fontSize:11, fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(245,242,235,0.35)', marginBottom:14 }}>Contact</p>
-            <p style={{ fontSize:13, color:'rgba(245,242,235,0.5)', marginBottom:9 }}>✉️ Info@enrolliq.io</p>
-            <p style={{ fontSize:13, color:'rgba(245,242,235,0.5)', marginBottom:9 }}>📞 +91 81423-41234</p>
-            <p style={{ fontSize:13, color:'rgba(245,242,235,0.5)', lineHeight:1.6 }}>📍 Hyderabad, Telangana, India</p>
-          </div>
-        </div>
-        <div style={{ borderTop:'1px solid rgba(245,242,235,0.07)', padding:'18px clamp(16px,5vw,48px)',
-          display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10, maxWidth:1100, margin:'0 auto' }}>
-          <p style={{ fontSize:12, color:'rgba(245,242,235,0.3)' }}>© 2026 EnrollIQ by Mind Huntz Digital Services Pvt Ltd</p>
-          <p style={{ fontSize:12, color:'rgba(245,242,235,0.3)' }}>Made with ❤️ in Hyderabad</p>
-        </div>
-      </footer>
-
-      {/* ENQUIRY MODAL */}
-      {selectedSchool && (
-        <div style={{
-          position:'fixed', inset:0, zIndex:200,
-          background:'rgba(0,0,0,0.75)', backdropFilter:'blur(6px)',
-          display:'flex', alignItems:'center', justifyContent:'center', padding:24,
-        }}>
-          <div ref={modalRef} style={{
-            background:'#161513', border:'1px solid rgba(245,242,235,0.12)',
-            borderRadius:16, width:'100%', maxWidth:500,
-            maxHeight:'90vh', overflowY:'auto', padding:'clamp(20px,5vw,36px)',
-          }}>
-            {formStatus === 'success' ? (
-              <div style={{ textAlign:'center', padding:'20px 0' }}>
-                <div style={{
-                  width:64, height:64, borderRadius:'50%',
-                  background:'rgba(29,158,117,0.15)', border:'1px solid rgba(29,158,117,0.3)',
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:28, margin:'0 auto 20px',
-                }}>✓</div>
-                <h3 style={{ fontFamily:"'Fraunces',serif", fontSize:24, fontWeight:700, color:'#f5f2eb', marginBottom:10 }}>
-                  Enquiry sent!
-                </h3>
-                <p style={{ fontSize:14, color:'rgba(245,242,235,0.55)', lineHeight:1.7, marginBottom:24 }}>
-                  Your enquiry has been sent to <strong style={{ color:'#f5f2eb' }}>{selectedSchool.name}</strong>. Their admissions team will call you within 24 hours.
-                </p>
-                <button onClick={()=>setSelectedSchool(null)} style={{
-                  background:'#12a38a', color:'#fff', border:'none',
-                  padding:'11px 28px', borderRadius:6, fontSize:14, fontWeight:500, cursor:'pointer',
-                }}>Done</button>
-              </div>
-            ) : (
-              <>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24 }}>
-                  <div>
-                    <p style={{ fontSize:11, color:'rgba(245,242,235,0.4)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:6 }}>Enquiry for</p>
-                    <h3 style={{ fontFamily:"'Fraunces',serif", fontSize:22, fontWeight:700, color:'#f5f2eb', marginBottom:4 }}>{selectedSchool.name}</h3>
-                    <p style={{ fontSize:13, color:'rgba(245,242,235,0.4)' }}>{selectedSchool.city} · {selectedSchool.board} · {selectedSchool.fee}</p>
-                  </div>
-                  <button onClick={()=>setSelectedSchool(null)} style={{
-                    background:'rgba(245,242,235,0.08)', border:'none', color:'rgba(245,242,235,0.6)',
-                    width:32, height:32, borderRadius:'50%', fontSize:16, cursor:'pointer',
-                    display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
-                  }}>✕</button>
-                </div>
-
-                {errorMsg && (
-                  <div style={{
-                    background:'rgba(226,75,74,0.12)', border:'1px solid rgba(226,75,74,0.25)',
-                    borderRadius:8, padding:'10px 14px', fontSize:13, color:'#f09595', marginBottom:16,
-                  }}>{errorMsg}</div>
-                )}
-
-                <form onSubmit={handleEnquiry} style={{ display:'flex', flexDirection:'column', gap:14 }}>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                    <div>
-                      <label style={lbl}>Parent name *</label>
-                      <input style={inp} placeholder="Your full name" value={form.parent_name} onChange={set('parent_name')} required
-                        onFocus={e=>e.target.style.borderColor='#12a38a'} onBlur={e=>e.target.style.borderColor='rgba(245,242,235,0.15)'}/>
-                    </div>
-                    <div>
-                      <label style={lbl}>Phone *</label>
-                      <input style={inp} placeholder="10-digit mobile" value={form.phone} onChange={set('phone')} required maxLength={10}
-                        onFocus={e=>e.target.style.borderColor='#12a38a'} onBlur={e=>e.target.style.borderColor='rgba(245,242,235,0.15)'}/>
-                    </div>
-                  </div>
-                  <div>
-                    <label style={lbl}>Email</label>
-                    <input style={inp} type="email" placeholder="parent@gmail.com" value={form.email} onChange={set('email')}
-                      onFocus={e=>e.target.style.borderColor='#12a38a'} onBlur={e=>e.target.style.borderColor='rgba(245,242,235,0.15)'}/>
-                  </div>
-                  <div>
-                    <label style={lbl}>Child's grade *</label>
-                    <select style={inp} value={form.child_grade} onChange={set('child_grade')} required
-                      onFocus={e=>e.target.style.borderColor='#12a38a'} onBlur={e=>e.target.style.borderColor='rgba(245,242,235,0.15)'}>
-                      <option value="">Select grade</option>
-                      {GRADES.map(g=><option key={g} value={g} style={{ background:'#1a1916' }}>{g}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={lbl}>Message (optional)</label>
-                    <textarea style={{ ...inp, resize:'none', minHeight:72 }} rows={3}
-                      placeholder="Any questions about this school..."
-                      value={form.message} onChange={set('message')}
-                      onFocus={e=>e.target.style.borderColor='#12a38a'} onBlur={e=>e.target.style.borderColor='rgba(245,242,235,0.15)'}/> 
-                  </div>
-                  <button type="submit" disabled={formStatus==='loading'} style={{
-                    background: formStatus==='loading' ? '#0a6b5a' : '#12a38a',
-                    color:'#fff', border:'none', padding:'13px',
-                    borderRadius:6, fontSize:15, fontWeight:500,
-                    cursor: formStatus==='loading' ? 'not-allowed' : 'pointer',
-                    transition:'background 0.2s', marginTop:4,
-                  }}>
-                    {formStatus==='loading' ? 'Sending...' : 'Send enquiry →'}
-                  </button>
-                  <p style={{ fontSize:11, color:'rgba(245,242,235,0.25)', textAlign:'center' }}>
-                    Your details are only shared with {selectedSchool.name}.
-                  </p>
-                </form>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        html { scroll-behavior: smooth; }
-        * { -webkit-tap-highlight-color: transparent; }
-
-        @media (max-width: 980px) {
-          .lp-how { grid-template-columns: 1fr 1fr !important; gap: 36px !important; }
-          .lp-contact-grid { grid-template-columns: 1fr 1fr !important; }
-        }
-        @media (max-width: 900px) {
-          .lp-footer-grid { grid-template-columns: 1fr 1fr !important; row-gap: 36px !important; }
-        }
-        @media (max-width: 760px) {
-          .lp-nav-links { display: none !important; }
-          .lp-menu-btn { display: inline-flex !important; }
-        }
-        @media (max-width: 700px) {
-          .lp-how { grid-template-columns: 1fr !important; gap: 40px !important; }
-          .lp-about-grid { grid-template-columns: 1fr !important; }
-          .lp-contact-grid { grid-template-columns: 1fr !important; }
-          .lp-hero { padding-top: 96px !important; }
-          .lp-h1 { font-size: clamp(36px, 11vw, 52px) !important; letter-spacing: -1.5px !important; }
-        }
-        @media (max-width: 560px) {
-          .lp-search { flex-direction: column !important; background: transparent !important; border: none !important; gap: 10px !important; }
-          .lp-search input { background: rgba(245,242,235,0.07) !important; border: 1px solid rgba(245,242,235,0.15) !important; border-radius: 10px !important; }
-          .lp-search button { border-radius: 10px !important; padding: 14px !important; }
-        }
-        @media (max-width: 520px) {
-          .lp-footer-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
-        }
-      `}</style>
+    <div style={{ background: C.paper, color: C.ink, fontFamily: TYPE.body, overflowX: 'hidden' }}>
+      <Nav onDemo={openDemo} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      <Hero onDemo={openDemo} />
+      <TrustBar />
+      <Management onDemo={openDemo} />
+      <Platform />
+      <Dashboards />
+      <AISection onDemo={openDemo} />
+      <Comparison />
+      <FinalCTA onDemo={openDemo} />
+      <Footer onDemo={openDemo} />
+      {demoOpen && <DemoModal onClose={() => setDemoOpen(false)} />}
+      <GlobalStyle />
     </div>
   )
 }
 
-const lbl = {
-  display:'block', fontSize:11, fontWeight:500,
-  letterSpacing:'0.08em', textTransform:'uppercase',
-  color:'rgba(245,242,235,0.4)', marginBottom:6,
+/* ─────────────────────────── NAV ─────────────────────────── */
+function Nav({ onDemo, menuOpen, setMenuOpen }) {
+  const links = [['Platform', '#platform'], ['For Management', '#management'], ['AI', '#ai'], ['Dashboards', '#dashboards']]
+  return (
+    <>
+      <nav style={{
+        position: 'sticky', top: 0, zIndex: 100, background: 'rgba(250,250,248,0.85)',
+        backdropFilter: 'blur(12px)', borderBottom: `1px solid ${C.line}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 clamp(16px,5vw,56px)', height: 68,
+      }}>
+        <a href="#top" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <img src={logo} alt="EnrollIQ" style={{ height: 34, width: 'auto' }} />
+        </a>
+        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 30 }}>
+          {links.map(([l, h]) => (
+            <a key={l} href={h} style={{ fontSize: 14, color: C.muted, textDecoration: 'none', fontWeight: 500, transition: 'color .2s' }}
+              onMouseEnter={e => e.target.style.color = C.ink} onMouseLeave={e => e.target.style.color = C.muted}>{l}</a>
+          ))}
+          <a href="/login" style={{ fontSize: 14, color: C.ink, textDecoration: 'none', fontWeight: 600, padding: '9px 16px', border: `1px solid ${C.line}`, borderRadius: 9, transition: 'border-color .2s' }}
+            onMouseEnter={e => e.currentTarget.style.borderColor = C.violet} onMouseLeave={e => e.currentTarget.style.borderColor = C.line}>Sign In</a>
+          <button onClick={onDemo} style={ctaStyle('sm')}>Book a Demo</button>
+        </div>
+        <button className="menu-btn" onClick={() => setMenuOpen(o => !o)} aria-label="Menu"
+          style={{ display: 'none', background: 'none', border: `1px solid ${C.line}`, borderRadius: 8, width: 42, height: 42, fontSize: 20, cursor: 'pointer', color: C.ink }}>
+          {menuOpen ? '✕' : '☰'}
+        </button>
+      </nav>
+      {menuOpen && (
+        <div style={{ position: 'sticky', top: 68, zIndex: 99, background: C.paper, borderBottom: `1px solid ${C.line}`, padding: '12px clamp(16px,5vw,56px)' }}>
+          {links.map(([l, h]) => (
+            <a key={l} href={h} onClick={() => setMenuOpen(false)} style={{ display: 'block', padding: '12px 0', color: C.ink, textDecoration: 'none', fontSize: 15, borderBottom: `1px solid ${C.line}` }}>{l}</a>
+          ))}
+          <a href="/login" style={{ display:'block', textAlign:'center', padding:'12px', marginTop:12, border:`1px solid ${C.line}`, borderRadius:9, color:C.ink, textDecoration:'none', fontWeight:600, fontSize:15 }}>Sign In</a>
+          <button onClick={onDemo} style={{ ...ctaStyle('sm'), width: '100%', marginTop: 10 }}>Book a Demo</button>
+        </div>
+      )}
+    </>
+  )
 }
 
-const inp = {
-  width:'100%', background:'rgba(245,242,235,0.06)',
-  border:'1px solid rgba(245,242,235,0.15)',
-  borderRadius:8, padding:'10px 14px',
-  fontSize:14, color:'#f5f2eb',
-  outline:'none', transition:'border-color 0.2s',
-  boxSizing:'border-box',
+/* ─────────────────────────── HERO ─────────────────────────── */
+function Hero({ onDemo }) {
+  return (
+    <section id="top" style={{ padding: 'clamp(56px,9vw,110px) clamp(16px,5vw,56px) clamp(40px,6vw,80px)', position: 'relative' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 'clamp(32px,5vw,64px)', alignItems: 'center' }} className="hero-grid">
+        <div>
+          <span style={eyebrow}>AI-Powered Education Growth Platform</span>
+          <h1 className="hero-h1" style={{
+            fontFamily: TYPE.display, fontSize: 'clamp(38px,5.2vw,64px)', lineHeight: 1.04,
+            fontWeight: 600, letterSpacing: '-1.5px', margin: '18px 0 20px', color: C.ink,
+          }}>
+            Run your entire institution from a single, intelligent view.
+          </h1>
+          <p style={{ fontSize: 'clamp(16px,1.5vw,19px)', lineHeight: 1.6, color: C.muted, maxWidth: 520, marginBottom: 30 }}>
+            EnrollIQ unifies admissions, marketing, academics, finance and operations — so leadership sees the whole picture and acts on it in real time.
+          </p>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button onClick={onDemo} style={ctaStyle('lg')}>Book a Demo →</button>
+            <a href="#platform" style={{ fontSize: 15, fontWeight: 600, color: C.ink, textDecoration: 'none', padding: '14px 6px' }}>See the platform</a>
+          </div>
+          <p style={{ fontSize: 13, color: C.muted, marginTop: 22 }}>◆ Now onboarding early education partners</p>
+        </div>
+        <Reveal delay={0.15}><DashboardMock /></Reveal>
+      </div>
+    </section>
+  )
+}
+
+// The signature element: a management control panel (what a Chairman sees)
+function DashboardMock() {
+  const metrics = [
+    { label: "Today's Enquiries", value: '42', trend: '+12%', up: true },
+    { label: 'Admission Conversion', value: '31%', trend: '+4.2pt', up: true },
+    { label: 'Fees Collected (MTD)', value: '₹48.6L', trend: '+18%', up: true },
+    { label: 'Expected Admissions', value: '128', trend: 'on track', up: true },
+  ]
+  return (
+    <div style={{
+      background: C.card, borderRadius: 18, border: `1px solid ${C.line}`,
+      boxShadow: '0 30px 60px -30px rgba(15,30,56,0.28)', overflow: 'hidden',
+    }}>
+      <div style={{ background: GRAD, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ color: '#fff', fontWeight: 600, fontSize: 14, fontFamily: TYPE.display }}>Group Overview</span>
+        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>● Live · 3 branches</span>
+      </div>
+      <div style={{ padding: 18, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        {metrics.map((m, i) => (
+          <div key={i} style={{ background: C.paper, borderRadius: 12, padding: '14px 16px', border: `1px solid ${C.line}` }}>
+            <p style={{ fontSize: 11.5, color: C.muted, margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px' }}>{m.label}</p>
+            <p style={{ fontSize: 26, fontWeight: 700, margin: '6px 0 2px', color: C.ink, fontFamily: TYPE.display }}>{m.value}</p>
+            <span style={{ fontSize: 12, fontWeight: 600, color: m.up ? C.teal : C.amber }}>▲ {m.trend}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ padding: '4px 18px 20px' }}>
+        <div style={{ background: C.paper, borderRadius: 12, padding: '14px 16px', border: `1px solid ${C.line}` }}>
+          <p style={{ fontSize: 11.5, color: C.muted, margin: '0 0 10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px' }}>Branch Performance</p>
+          {[['Madhapur', 88], ['Gachibowli', 72], ['Kondapur', 61]].map(([n, v]) => (
+            <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <span style={{ fontSize: 12.5, color: C.ink, width: 90, fontWeight: 500 }}>{n}</span>
+              <div style={{ flex: 1, height: 7, background: C.line, borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{ width: `${v}%`, height: '100%', background: GRAD, borderRadius: 4 }} />
+              </div>
+              <span style={{ fontSize: 12, color: C.muted, width: 34, textAlign: 'right' }}>{v}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────── TRUST BAR ─────────────────────────── */
+function TrustBar() {
+  return (
+    <div style={{ borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}`, background: C.card }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '20px clamp(16px,5vw,56px)', display: 'flex', flexWrap: 'wrap', gap: 'clamp(16px,4vw,48px)', alignItems: 'center', justifyContent: 'center' }}>
+        {['Admissions', 'Marketing', 'Academics', 'Finance', 'Staff', 'Operations'].map(t => (
+          <span key={t} style={{ fontSize: 14, color: C.muted, fontWeight: 600, letterSpacing: '.3px' }}>{t}</span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────── MANAGEMENT ─────────────────────────── */
+function Management({ onDemo }) {
+  const metrics = [
+    ["Today's Enquiries", 'Every new lead across all branches, the moment it arrives.'],
+    ['Admission Conversion', 'Enquiry-to-admission rate, tracked stage by stage.'],
+    ['Expected Admissions', 'Forecast confirmations from your live pipeline.'],
+    ['Fees Collected', 'Real-time collection against targets, per branch.'],
+    ['Counsellor Performance', 'Who is converting, who needs support.'],
+    ['Marketing ROI', 'Which campaigns and sources actually enrol students.'],
+    ['Branch Performance', 'Compare every branch on one leaderboard.'],
+  ]
+  return (
+    <section id="management" style={{ padding: 'clamp(64px,9vw,120px) clamp(16px,5vw,56px)', background: C.ink, color: '#fff' }}>
+      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+        <Reveal>
+          <span style={{ ...eyebrow, color: C.amber, borderColor: 'rgba(232,161,58,0.35)' }}>For Leadership</span>
+          <h2 style={{ fontFamily: TYPE.display, fontSize: 'clamp(30px,4vw,48px)', fontWeight: 600, letterSpacing: '-1px', margin: '18px 0 14px', lineHeight: 1.1 }}>
+            Built for management.<br />Not just administrators.
+          </h2>
+          <p style={{ fontSize: 'clamp(16px,1.5vw,19px)', color: 'rgba(255,255,255,0.7)', maxWidth: 620, lineHeight: 1.6, marginBottom: 44 }}>
+            Get one real-time view of admissions, marketing, academics, finance, staff and operations across your entire education group.
+          </p>
+        </Reveal>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: 16 }}>
+          {metrics.map(([t, d], i) => (
+            <Reveal key={t} delay={i * 0.05}>
+              <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '22px 20px', height: '100%' }}>
+                <p style={{ fontFamily: TYPE.display, fontSize: 18, fontWeight: 600, margin: '0 0 8px', color: '#fff' }}>{t}</p>
+                <p style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.65)', margin: 0, lineHeight: 1.55 }}>{d}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+        <div style={{ marginTop: 40 }}>
+          <button onClick={onDemo} style={ctaStyle('lg')}>Book a Demo →</button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────── DASHBOARDS ─────────────────────────── */
+function Dashboards() {
+  const roles = [
+    ['Management', 'Group-wide admissions, revenue, marketing ROI and branch performance in one view.'],
+    ['Admissions', 'Live enquiry queue, lead scores, follow-ups and conversion by counsellor.'],
+    ['Academic', 'Attendance, exams, results and academic progress across classes.'],
+    ['Finance', 'Fee structures, collections, dues and daily cash position per branch.'],
+    ['Staff', 'Staff records, roles, attendance and documents in one place.'],
+    ['Teacher', 'Class attendance, marks entry, daily updates and homework for their sections.'],
+  ]
+  return (
+    <section id="dashboards" style={{ padding: 'clamp(64px,9vw,120px) clamp(16px,5vw,56px)', background: C.card, borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
+      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+        <Reveal>
+          <span style={eyebrow}>Role-based access</span>
+          <h2 style={{ fontFamily: TYPE.display, fontSize: 'clamp(30px,4vw,48px)', fontWeight: 600, letterSpacing: '-1px', margin: '18px 0 14px', lineHeight: 1.1, maxWidth: 720 }}>
+            Six dashboards. Everyone sees exactly what they should.
+          </h2>
+          <p style={{ fontSize: 'clamp(16px,1.5vw,19px)', color: C.muted, maxWidth: 620, lineHeight: 1.6, marginBottom: 44 }}>
+            Every role gets a focused view built for their job — with leadership seeing across all of them. Parents get a dedicated mobile app.
+          </p>
+        </Reveal>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 16 }}>
+          {roles.map(([t, d], i) => (
+            <Reveal key={t} delay={i * 0.05}>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', padding: '22px 22px', background: C.paper, borderRadius: 14, border: `1px solid ${C.line}`, height: '100%' }}>
+                <div style={{ flexShrink: 0, width: 42, height: 42, borderRadius: 11, background: GRAD, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, fontFamily: TYPE.display }}>{i + 1}</div>
+                <div>
+                  <p style={{ fontFamily: TYPE.display, fontSize: 19, fontWeight: 600, margin: '2px 0 6px', color: C.ink }}>{t}</p>
+                  <p style={{ fontSize: 14, color: C.muted, margin: 0, lineHeight: 1.55 }}>{d}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────── PLATFORM ─────────────────────────── */
+function Platform() {
+  const mods = [
+    ['◆', 'Admissions CRM', 'Capture every enquiry, score leads with AI, and move them through a visual pipeline to confirmed admission.'],
+    ['◇', 'Marketing & Leads', 'Track sources, campaigns and counsellor follow-ups — and see exactly what drives enrolments.'],
+    ['○', 'Academics', 'Attendance, exams, AI-generated papers, grading and report cards in one flow.'],
+    ['◈', 'Finance & Fees', 'Fee structures, collections and dues with real-time visibility for every branch.'],
+    ['◉', 'Parent App', 'Parents see attendance, results, daily updates and fees — and get notified instantly.'],
+    ['⬢', 'Transport', 'Live bus tracking, route and stop management, and boarding scans parents can follow.'],
+    ['⬡', 'Multi-Branch', 'Run every branch as its own space, with group-level oversight for leadership.'],
+  ]
+  return (
+    <section id="platform" style={{ padding: 'clamp(64px,9vw,120px) clamp(16px,5vw,56px)', maxWidth: 1200, margin: '0 auto' }}>
+      <Reveal>
+        <span style={eyebrow}>The Platform</span>
+        <h2 style={{ fontFamily: TYPE.display, fontSize: 'clamp(30px,4vw,48px)', fontWeight: 600, letterSpacing: '-1px', margin: '18px 0 14px', lineHeight: 1.1, maxWidth: 720 }}>
+          One platform for the whole institution.
+        </h2>
+        <p style={{ fontSize: 'clamp(16px,1.5vw,19px)', color: C.muted, maxWidth: 600, lineHeight: 1.6, marginBottom: 48 }}>
+          Every team works in the same system, so nothing falls through the cracks between departments.
+        </p>
+      </Reveal>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
+        {mods.map(([icon, t, d], i) => (
+          <Reveal key={t} delay={i * 0.06}>
+            <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: 26, height: '100%', transition: 'transform .25s, box-shadow .25s' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 20px 40px -24px rgba(15,30,56,0.25)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}>
+              <div style={{ width: 46, height: 46, borderRadius: 12, background: C.paper, border: `1px solid ${C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: C.teal, marginBottom: 16 }}>{icon}</div>
+              <h3 style={{ fontFamily: TYPE.display, fontSize: 20, fontWeight: 600, margin: '0 0 8px', color: C.ink }}>{t}</h3>
+              <p style={{ fontSize: 14.5, color: C.muted, margin: 0, lineHeight: 1.6 }}>{d}</p>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────── AI SECTION ─────────────────────────── */
+function AISection({ onDemo }) {
+  const items = [
+    ['Lead scoring', 'AI ranks every enquiry by likelihood to enrol, so counsellors chase the right ones first.'],
+    ['Exam generation', 'Generate question papers from topics in seconds, then edit and publish.'],
+    ['Answer-sheet grading', 'AI reads and grades submitted sheets, with teacher review before results go out.'],
+    ['Report insights', 'Automatic strengths, gaps and next-step suggestions for every student.'],
+  ]
+  return (
+    <section id="ai" style={{ padding: 'clamp(64px,9vw,120px) clamp(16px,5vw,56px)', background: C.card, borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
+      <div style={{ maxWidth: 1120, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(32px,5vw,72px)', alignItems: 'center' }} className="ai-grid">
+        <Reveal>
+          <div>
+            <span style={eyebrow}>Intelligence, built in</span>
+            <h2 style={{ fontFamily: TYPE.display, fontSize: 'clamp(28px,3.6vw,44px)', fontWeight: 600, letterSpacing: '-1px', margin: '18px 0 16px', lineHeight: 1.12 }}>
+              AI that does the work, not just the talking.
+            </h2>
+            <p style={{ fontSize: 17, color: C.muted, lineHeight: 1.6, marginBottom: 28 }}>
+              EnrollIQ puts practical AI where it saves real time — from the first enquiry to the final report card.
+            </p>
+            <button onClick={onDemo} style={ctaStyle('lg')}>Book a Demo →</button>
+          </div>
+        </Reveal>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {items.map(([t, d], i) => (
+            <Reveal key={t} delay={i * 0.06}>
+              <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', padding: '18px 20px', background: C.paper, borderRadius: 14, border: `1px solid ${C.line}` }}>
+                <div style={{ flexShrink: 0, width: 34, height: 34, borderRadius: 9, background: GRAD, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 15 }}>✦</div>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: 15.5, margin: '2px 0 4px', color: C.ink }}>{t}</p>
+                  <p style={{ fontSize: 14, color: C.muted, margin: 0, lineHeight: 1.55 }}>{d}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ─────────────────────────── COMPARISON ─────────────────────────── */
+function Comparison() {
+  const rows = [
+    ['Management dashboard for leadership', true, false],
+    ['Six role-based dashboards', true, 'Limited'],
+    ['AI lead scoring & smart follow-ups', true, false],
+    ['AI exam generation & grading', true, false],
+    ['Admissions CRM + marketing ROI', true, 'Partial'],
+    ['Fees, collections & dues tracking', true, true],
+    ['Live transport & bus tracking', true, 'Add-on'],
+    ['Parent mobile app included', true, 'Sometimes'],
+    ['Multi-branch group oversight', true, false],
+    ['Real-time, one unified system', true, 'Siloed'],
+    ['Built for Indian institutions', true, 'Rarely'],
+  ]
+  const cell = (v) => v === true
+    ? <span style={{ color: C.teal, fontWeight: 800, fontSize: 18 }}>✓</span>
+    : v === false ? <span style={{ color: '#C4432E', fontWeight: 700, fontSize: 17 }}>✕</span>
+    : <span style={{ color: C.muted, fontSize: 13 }}>{v}</span>
+  return (
+    <section style={{ padding: 'clamp(64px,9vw,120px) clamp(16px,5vw,56px)', maxWidth: 900, margin: '0 auto' }}>
+      <Reveal>
+        <span style={eyebrow}>Why EnrollIQ</span>
+        <h2 style={{ fontFamily: TYPE.display, fontSize: 'clamp(28px,3.6vw,44px)', fontWeight: 600, letterSpacing: '-1px', margin: '18px 0 36px', lineHeight: 1.12 }}>
+          Most software talks to admins. We report to leadership.
+        </h2>
+        <p style={{ fontSize: 'clamp(16px,1.5vw,18px)', color: C.muted, maxWidth: 600, lineHeight: 1.6, margin: '0 0 36px' }}>
+          A typical ERP digitises paperwork. EnrollIQ connects every department and surfaces what leadership needs to grow the institution.
+        </p>
+      </Reveal>
+      <Reveal delay={0.1}>
+        <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 130px', background: C.ink, color: '#fff' }} className="cmp-head">
+            <div style={{ padding: '16px 20px', fontWeight: 600, fontSize: 14 }}>Capability</div>
+            <div style={{ padding: '16px 12px', fontWeight: 700, fontSize: 14, textAlign: 'center', fontFamily: TYPE.display }}>EnrollIQ</div>
+            <div style={{ padding: '16px 12px', fontWeight: 500, fontSize: 13, textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>Typical ERP</div>
+          </div>
+          {rows.map(([label, a, b], i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 130px 130px', borderTop: `1px solid ${C.line}`, alignItems: 'center' }}>
+              <div style={{ padding: '15px 20px', fontSize: 14.5, color: C.ink, fontWeight: 500 }}>{label}</div>
+              <div style={{ padding: '15px 12px', textAlign: 'center', background: 'rgba(18,163,138,0.05)' }}>{cell(a)}</div>
+              <div style={{ padding: '15px 12px', textAlign: 'center' }}>{cell(b)}</div>
+            </div>
+          ))}
+        </div>
+      </Reveal>
+    </section>
+  )
+}
+
+/* ─────────────────────────── FINAL CTA ─────────────────────────── */
+function FinalCTA({ onDemo }) {
+  return (
+    <section style={{ padding: 'clamp(72px,10vw,130px) clamp(16px,5vw,56px)', textAlign: 'center' }}>
+      <Reveal>
+        <span style={eyebrow}>Pilot EnrollIQ at your institution</span>
+        <h2 style={{ fontFamily: TYPE.display, fontSize: 'clamp(32px,4.6vw,56px)', fontWeight: 600, letterSpacing: '-1.5px', margin: '20px auto 18px', lineHeight: 1.08, maxWidth: 780 }}>
+          See your whole institution the way leadership should.
+        </h2>
+        <p style={{ fontSize: 18, color: C.muted, maxWidth: 540, margin: '0 auto 32px', lineHeight: 1.6 }}>
+          Book a 30-minute demo. We'll map EnrollIQ to how your group actually runs.
+        </p>
+        <button onClick={onDemo} style={ctaStyle('lg')}>Book a Demo →</button>
+      </Reveal>
+    </section>
+  )
+}
+
+/* ─────────────────────────── FOOTER ─────────────────────────── */
+function Footer({ onDemo }) {
+  return (
+    <footer style={{ background: C.ink, color: 'rgba(255,255,255,0.7)', padding: 'clamp(48px,7vw,72px) clamp(16px,5vw,56px) 32px' }}>
+      <div style={{ maxWidth: 1120, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 40 }} className="footer-grid">
+        <div>
+          <div style={{ display:'inline-block', background:'#fff', padding:'8px 12px', borderRadius:10, marginBottom:14 }}>
+            <img src={logo} alt="EnrollIQ" style={{ height: 30, display:'block' }} />
+          </div>
+          <p style={{ fontSize: 14, lineHeight: 1.6, maxWidth: 300, color: 'rgba(255,255,255,0.6)' }}>
+            The AI-powered education growth platform. Built for institutions that lead.
+          </p>
+        </div>
+        <div>
+          <p style={{ fontWeight: 600, color: '#fff', fontSize: 14, marginBottom: 14 }}>Contact</p>
+          <p style={{ fontSize: 13.5, margin: '0 0 9px' }}>✉ Info@enrolliq.io</p>
+          <p style={{ fontSize: 13.5, margin: '0 0 9px' }}>📞 +91 81423-41234</p>
+          <p style={{ fontSize: 13.5, margin: 0, color: 'rgba(255,255,255,0.5)' }}>Mind Huntz Digital Services Pvt Ltd, Hyderabad</p>
+        </div>
+        <div>
+          <p style={{ fontWeight: 600, color: '#fff', fontSize: 14, marginBottom: 14 }}>Get started</p>
+          <button onClick={onDemo} style={{ ...ctaStyle('sm'), marginBottom: 12 }}>Book a Demo</button>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Now onboarding early education partners.</p>
+        </div>
+      </div>
+      <div style={{ maxWidth: 1120, margin: '36px auto 0', paddingTop: 22, borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: 12.5, color: 'rgba(255,255,255,0.45)' }}>
+        © {new Date().getFullYear()} EnrollIQ · Mind Huntz Digital Services Pvt Ltd. All rights reserved.
+      </div>
+    </footer>
+  )
+}
+
+/* ─────────────────────────── DEMO MODAL ─────────────────────────── */
+function DemoModal({ onClose }) {
+  const [form, setForm] = useState({ name: '', institution: '', designation: '', mobile: '', work_email: '', institution_type: '' })
+  const [status, setStatus] = useState('idle') // idle | sending | done | error
+  const [msg, setMsg] = useState('')
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const submit = async () => {
+    if (!form.name.trim() || !form.institution.trim() || !form.mobile.trim()) {
+      setMsg('Please fill name, institution and mobile.'); return
+    }
+    setStatus('sending'); setMsg('')
+    try {
+      const res = await axios.post(`${API}/demo-request`, form)
+      setStatus('done'); setMsg(res.data?.message || 'Thanks! Our team will reach out shortly.')
+    } catch (e) {
+      setStatus('error'); setMsg(e.response?.data?.message || 'Something went wrong. Please try again.')
+    }
+  }
+
+  const types = ['School', 'Group of Schools', 'PU / Junior College', 'Coaching Institute', 'Other']
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,30,56,0.55)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.paper, borderRadius: 18, width: '100%', maxWidth: 460, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 40px 80px -20px rgba(15,30,56,0.5)' }}>
+        <div style={{ padding: '24px 26px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h3 style={{ fontFamily: TYPE.display, fontSize: 24, fontWeight: 600, margin: 0, color: C.ink }}>Request your demo</h3>
+            <p style={{ fontSize: 14, color: C.muted, margin: '6px 0 0' }}>A 30-minute walkthrough, mapped to your institution.</p>
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: C.muted, lineHeight: 1 }}>✕</button>
+        </div>
+
+        {status === 'done' ? (
+          <div style={{ padding: '36px 26px 40px', textAlign: 'center' }}>
+            <div style={{ fontSize: 44 }}>✓</div>
+            <p style={{ fontSize: 16, color: C.ink, fontWeight: 600, margin: '10px 0 6px' }}>Request received</p>
+            <p style={{ fontSize: 14, color: C.muted, margin: '0 0 22px' }}>{msg}</p>
+            <button onClick={onClose} style={ctaStyle('lg')}>Done</button>
+          </div>
+        ) : (
+          <div style={{ padding: '20px 26px 28px' }}>
+            {[
+              ['name', 'Full name', 'text', 'e.g. Rajesh Kumar'],
+              ['institution', 'Institution name', 'text', 'e.g. Vidya Mandir Group'],
+              ['designation', 'Designation', 'text', 'e.g. Director / Principal'],
+              ['mobile', 'Mobile number', 'tel', 'e.g. 98765 43210'],
+              ['work_email', 'Work email', 'email', 'e.g. you@institution.edu'],
+            ].map(([k, label, type, ph]) => (
+              <div key={k} style={{ marginBottom: 14 }}>
+                <label style={fieldLabel}>{label}{['name', 'institution', 'mobile'].includes(k) && <span style={{ color: '#C4432E' }}> *</span>}</label>
+                <input type={type} value={form[k]} onChange={e => set(k, e.target.value)} placeholder={ph} style={fieldInput} />
+              </div>
+            ))}
+            <div style={{ marginBottom: 20 }}>
+              <label style={fieldLabel}>Institution type</label>
+              <select value={form.institution_type} onChange={e => set('institution_type', e.target.value)} style={fieldInput}>
+                <option value="">Select…</option>
+                {types.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            {msg && status !== 'sending' && <p style={{ fontSize: 13, color: '#C4432E', margin: '0 0 12px' }}>{msg}</p>}
+            <button onClick={submit} disabled={status === 'sending'} style={{ ...ctaStyle('lg'), width: '100%', opacity: status === 'sending' ? 0.7 : 1 }}>
+              {status === 'sending' ? 'Sending…' : 'Request Your Demo'}
+            </button>
+            <p style={{ fontSize: 12, color: C.muted, textAlign: 'center', margin: '14px 0 0' }}>We'll never share your details.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────── SHARED STYLES ─────────────────────────── */
+const eyebrow = {
+  display: 'inline-block', fontSize: 12.5, fontWeight: 700, letterSpacing: '1px',
+  textTransform: 'uppercase', color: C.teal, border: `1px solid rgba(18,163,138,0.3)`,
+  borderRadius: 20, padding: '5px 14px',
+}
+const fieldLabel = { display: 'block', fontSize: 13, fontWeight: 600, color: C.ink, marginBottom: 6 }
+const fieldInput = {
+  width: '100%', padding: '11px 13px', borderRadius: 10, border: `1px solid ${C.line}`,
+  fontSize: 14.5, fontFamily: TYPE.body, color: C.ink, background: '#fff', boxSizing: 'border-box', outline: 'none',
+}
+function ctaStyle(size) {
+  const pad = size === 'lg' ? '15px 30px' : '10px 20px'
+  const fs = size === 'lg' ? 15.5 : 14
+  return {
+    background: GRAD, color: '#fff', border: 'none', borderRadius: 10, padding: pad,
+    fontSize: fs, fontWeight: 700, cursor: 'pointer', fontFamily: TYPE.body,
+    boxShadow: '0 8px 22px -8px rgba(109,40,217,0.55)', transition: 'filter .2s, transform .1s',
+  }
+}
+
+function GlobalStyle() {
+  return (
+    <style>{`
+      html { scroll-behavior: smooth; }
+      * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap');
+      body { margin: 0; }
+      button:active { transform: scale(0.98); }
+      @media (max-width: 900px) {
+        .hero-grid { grid-template-columns: 1fr !important; }
+        .ai-grid { grid-template-columns: 1fr !important; }
+        .footer-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+      }
+      @media (max-width: 760px) {
+        .nav-links { display: none !important; }
+        .menu-btn { display: inline-flex !important; align-items:center; justify-content:center; }
+      }
+      @media (max-width: 520px) {
+        .cmp-head > div:nth-child(3), .cmp-head { font-size: 12px; }
+      }
+    `}</style>
+  )
 }
