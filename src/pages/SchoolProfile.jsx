@@ -129,6 +129,14 @@ export default function SchoolProfile() {
     setForm(p => ({ ...p, facilities: [...s].join(',') }))
   }
 
+  const [customFacilityInput, setCustomFacilityInput] = useState('')
+  const addCustomFacility = () => {
+    const name = customFacilityInput.trim()
+    if (!name || selectedFacilities.includes(name)) return
+    setForm(p => ({ ...p, facilities: [...selectedFacilities, name].join(',') }))
+    setCustomFacilityInput('')
+  }
+
   // Highlights — array of {heading, content}
   const highlights = (() => {
     try {
@@ -228,30 +236,30 @@ export default function SchoolProfile() {
         )}
 
         {/* Header */}
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:24 }}>
-          <div>
-            <h1 style={{ fontSize:26, fontWeight:600, color:'#1a1814', fontFamily:'Georgia,serif', marginBottom:4 }}>
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:14, marginBottom:24 }}>
+          <div style={{ minWidth:0 }}>
+            <h1 style={{ fontSize:'clamp(20px,5vw,26px)', fontWeight:600, color:'#1a1814', fontFamily:'Georgia,serif', marginBottom:4 }}>
               School Public Profile
             </h1>
             <p style={{ fontSize:13, color:'#9ca3af' }}>Manage what parents see on your school landing page</p>
           </div>
-          <div style={{ display:'flex', gap:10 }}>
+          <div style={{ display:'flex', gap:10, flexWrap:'wrap', width:'100%', maxWidth:'fit-content' }}>
             <a href={`/discover?ref=${slug}`} target="_blank" rel="noreferrer"
-              style={{ background:'white', color:'#d4521a', border:'1.5px solid #d4521a', borderRadius:10, padding:'8px 16px', fontSize:13, fontWeight:600, textDecoration:'none', display:'flex', alignItems:'center', gap:6 }}>
+              style={{ background:'white', color:'#d4521a', border:'1.5px solid #d4521a', borderRadius:10, padding:'8px 16px', fontSize:13, fontWeight:600, textDecoration:'none', display:'flex', alignItems:'center', justifyContent:'center', gap:6, flex:'1 1 auto', whiteSpace:'nowrap' }}>
               👁 Preview public page →
             </a>
             <button onClick={handleSave} disabled={saving}
-              style={{ background:'#1a1814', color:'white', border:'none', borderRadius:10, padding:'9px 20px', fontSize:13, fontWeight:600, cursor:'pointer', opacity:saving?0.6:1 }}>
+              style={{ background:'#1a1814', color:'white', border:'none', borderRadius:10, padding:'9px 20px', fontSize:13, fontWeight:600, cursor:'pointer', opacity:saving?0.6:1, flex:'1 1 auto', whiteSpace:'nowrap' }}>
               {saving ? 'Saving...' : '✓ Save & Publish'}
             </button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div style={{ display:'flex', gap:4, background:'white', border:'1px solid #f0ede8', borderRadius:10, padding:4, marginBottom:20, width:'fit-content' }}>
+        <div style={{ display:'flex', gap:4, background:'white', border:'1px solid #f0ede8', borderRadius:10, padding:4, marginBottom:20, maxWidth:'100%', width:'fit-content', overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
           {TABS.map(t => (
             <button key={t.key} onClick={() => setActiveTab(t.key)}
-              style={{ padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:500, background:activeTab===t.key?'#1a1814':'transparent', color:activeTab===t.key?'white':'#6b7280', transition:'all 0.15s' }}>
+              style={{ padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:500, background:activeTab===t.key?'#1a1814':'transparent', color:activeTab===t.key?'white':'#6b7280', transition:'all 0.15s', whiteSpace:'nowrap', flexShrink:0 }}>
               {t.label}
             </button>
           ))}
@@ -435,6 +443,35 @@ export default function SchoolProfile() {
                   )
                 })}
               </div>
+
+              {/* Custom (non-preset) facilities you've typed in yourself */}
+              {selectedFacilities.filter(f => !FACILITIES_LIST.some(fac => fac.name === f)).length > 0 && (
+                <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:14 }}>
+                  {selectedFacilities.filter(f => !FACILITIES_LIST.some(fac => fac.name === f)).map(name => (
+                    <span key={name}
+                      style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 12px', borderRadius:20, background:'#1a1814', color:'white', fontSize:12, fontWeight:500 }}>
+                      {name}
+                      <button type="button" onClick={() => toggleFacility(name)}
+                        style={{ background:'none', border:'none', color:'white', cursor:'pointer', fontSize:14, lineHeight:1, padding:0 }}>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Add a custom facility not in the preset list */}
+              <div style={{ display:'flex', gap:8, marginTop:16, flexWrap:'wrap' }}>
+                <input value={customFacilityInput} onChange={e => setCustomFacilityInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomFacility() } }}
+                  placeholder="Add a facility not listed above..."
+                  style={{ flex:'1 1 200px', border:'1.5px solid #e5e7eb', borderRadius:10, padding:'10px 14px', fontSize:13, outline:'none', fontFamily:'inherit' }} />
+                <button type="button" onClick={addCustomFacility}
+                  style={{ background:'#1a1814', color:'white', border:'none', borderRadius:10, padding:'0 20px', fontSize:13, fontWeight:600, cursor:'pointer', whiteSpace:'nowrap' }}>
+                  + Add
+                </button>
+              </div>
+
               <div style={{ marginTop:16, padding:'12px 14px', background:'#f8f6f1', borderRadius:10 }}>
                 <p style={{ fontSize:12, color:'#9ca3af' }}>
                   {selectedFacilities.length} facilities selected:
@@ -447,8 +484,8 @@ export default function SchoolProfile() {
           {/* ── HIGHLIGHTS ── */}
           {activeTab === 'highlights' && (
             <div>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
-                <div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12, marginBottom:20 }}>
+                <div style={{ minWidth:0, flex:'1 1 240px' }}>
                   <p style={SECTION_TITLE}>Why choose us — highlights</p>
                   <p style={{ fontSize:13, color:'#9ca3af', marginTop:-10 }}>
                     Each highlight has a heading and description. These appear in the "Why choose {form.name || 'us'}?" section.
@@ -574,7 +611,7 @@ export default function SchoolProfile() {
           )}
 
           {/* Save button bottom */}
-          <div style={{ borderTop:'1px solid #f0ede8', paddingTop:20, marginTop:8, display:'flex', gap:12 }}>
+          <div style={{ borderTop:'1px solid #f0ede8', paddingTop:20, marginTop:8, display:'flex', gap:12, flexWrap:'wrap' }}>
             <button onClick={handleSave} disabled={saving}
               style={{ background:'#1a1814', color:'white', border:'none', borderRadius:10, padding:'10px 24px', fontSize:14, fontWeight:600, cursor:'pointer', opacity:saving?0.6:1 }}>
               {saving ? 'Saving...' : '✓ Save & Publish Profile'}
