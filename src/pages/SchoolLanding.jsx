@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import api from '../api/axios'
 
 const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '')
+// Cloudinary URLs are already absolute; only prefix old relative /api/... paths
+const imgUrl = (u) => !u ? u : (u.startsWith('http') ? u : `${BASE}${u}`)
 
 // ── Chatbot ───────────────────────────────────────────────────────────────────
 function Chatbot({ school }) {
@@ -335,7 +337,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
       <div style={{ position:'relative', height:'100vh', maxHeight:640, minHeight:520, overflow:'hidden', background:'#1a1814' }}>
         {school.banner_url
-          ? <img src={`${BASE}${school.banner_url}`} alt={school.name} style={{ width:'100%',height:'100%',objectFit:'cover',opacity:0.5 }} />
+          ? <img src={imgUrl(school.banner_url)} alt={school.name} style={{ width:'100%',height:'100%',objectFit:'cover',opacity:0.5 }} />
           : <div style={{ width:'100%',height:'100%',background:'linear-gradient(135deg,#1a1814 0%,#2d2820 40%,#d4521a 100%)',display:'flex',alignItems:'center',justifyContent:'center' }}>
               <span style={{ fontFamily:'Georgia,serif',fontSize:'clamp(90px,20vw,180px)',fontWeight:900,color:'rgba(255,255,255,0.04)' }}>{school.name[0]}</span>
             </div>
@@ -434,7 +436,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
                     aspectRatio:i===0?'2/1':'1/1',
                     gridColumn:i===0?'span 2':'span 1',
                     position:'relative',background:'#f3f4f6' }}>
-                  <img src={`${BASE}${img.image_url}`} alt={img.caption||''}
+                  <img src={imgUrl(img.image_url)} alt={img.caption||''}
                     style={{ width:'100%',height:'100%',objectFit:'cover',transition:'transform 0.4s' }}
                     onMouseEnter={e=>e.target.style.transform='scale(1.06)'}
                     onMouseLeave={e=>e.target.style.transform='scale(1)'} />
@@ -573,7 +575,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
           onClick={()=>setLightbox(null)}>
           <button onClick={()=>setLightbox(null)} style={{ position:'absolute',top:20,right:20,background:'rgba(255,255,255,0.1)',border:'none',color:'white',width:40,height:40,borderRadius:'50%',fontSize:20,cursor:'pointer',zIndex:2 }}>×</button>
           {lightbox>0 && <button onClick={e=>{e.stopPropagation();setLightbox(l=>l-1)}} style={{ position:'absolute',left:20,background:'rgba(255,255,255,0.1)',border:'none',color:'white',padding:'12px 16px',borderRadius:10,fontSize:24,cursor:'pointer',zIndex:2 }}>‹</button>}
-          <img src={`${BASE}${gallery[lightbox]?.image_url}`} alt="" style={{ maxWidth:'90vw',maxHeight:'85vh',objectFit:'contain',borderRadius:12 }} onClick={e=>e.stopPropagation()} />
+          <img src={imgUrl(gallery[lightbox]?.image_url)} alt="" style={{ maxWidth:'90vw',maxHeight:'85vh',objectFit:'contain',borderRadius:12 }} onClick={e=>e.stopPropagation()} />
           {lightbox<gallery.length-1 && <button onClick={e=>{e.stopPropagation();setLightbox(l=>l+1)}} style={{ position:'absolute',right:20,background:'rgba(255,255,255,0.1)',border:'none',color:'white',padding:'12px 16px',borderRadius:10,fontSize:24,cursor:'pointer',zIndex:2 }}>›</button>}
           <div style={{ position:'absolute',bottom:16,display:'flex',gap:6 }}>
             {gallery.map((_,i)=><div key={i} style={{ width:6,height:6,borderRadius:'50%',background:i===lightbox?'white':'rgba(255,255,255,0.3)' }} />)}

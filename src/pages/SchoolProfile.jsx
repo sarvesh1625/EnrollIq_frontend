@@ -31,6 +31,8 @@ const MEDIUMS   = ['English','Telugu','Hindi','English & Telugu']
 const GRADES    = ['Pre-KG to Grade 5','Pre-KG to Grade 8','Pre-KG to Grade 10','Pre-KG to Grade 12','Grade 1 to Grade 10','Grade 1 to Grade 12','LKG to Grade 10','LKG to Grade 12']
 
 const IMG_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '')
+// Cloudinary URLs are already absolute; only prefix old relative /api/... paths
+const imgUrl = (u) => !u ? u : (u.startsWith('http') ? u : `${IMG_BASE}${u}`)
 
 export default function SchoolProfile() {
   const { user } = useAuth()
@@ -109,7 +111,7 @@ export default function SchoolProfile() {
         facilities:       sc.facilities       || '',
         highlights:       sc.highlights       || '',
       })
-      if (sc.banner_url) setBannerPreview(`${IMG_BASE}${sc.banner_url}`)
+      if (sc.banner_url) setBannerPreview(imgUrl(sc.banner_url))
     }).catch(() => {})
 
     api.get('/discovery/gallery').then(res => setGallery(res.data)).catch(() => {})
@@ -548,7 +550,7 @@ export default function SchoolProfile() {
                       <div key={img.id} style={{ position:'relative', borderRadius:12, overflow:'hidden', aspectRatio:'1/1', background:'#f8f6f1' }}
                         onMouseEnter={e => e.currentTarget.querySelector('.del-btn').style.opacity='1'}
                         onMouseLeave={e => e.currentTarget.querySelector('.del-btn').style.opacity='0'}>
-                        <img src={`${IMG_BASE}${img.image_url}`} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                        <img src={imgUrl(img.image_url)} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                         <button className="del-btn" onClick={() => deleteGalleryImage(img.id)}
                           style={{ position:'absolute', top:6, right:6, background:'rgba(0,0,0,0.6)', color:'white', border:'none', borderRadius:6, width:28, height:28, cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', opacity:0, transition:'opacity 0.2s' }}>
                           ✕

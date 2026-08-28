@@ -3,6 +3,8 @@ import SchoolLanding from './SchoolLanding'
 import api from '../api/axios'
 
 const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '')
+// Cloudinary URLs are already absolute; only prefix old relative /api/... paths
+const imgUrl = (u) => !u ? u : (u.startsWith('http') ? u : `${BASE_URL}${u}`)
 const BOARDS   = ['All','CBSE','ICSE','State Board','IB','IGCSE']
 const CITIES   = ['Hyderabad','Bangalore','Chennai','Mumbai','Delhi','Pune']
 
@@ -213,7 +215,7 @@ export default function SchoolDiscovery() {
                 {/* Banner */}
                 <div style={{ height:150, background:'linear-gradient(135deg,#1a1814,#d4521a)', position:'relative', overflow:'hidden' }}>
                   {school.banner_url
-                    ? <img src={`${BASE_URL}${school.banner_url}`} alt={school.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                    ? <img src={imgUrl(school.banner_url)} alt={school.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                     : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center' }}>
                         <span style={{ fontFamily:'Georgia,serif', fontSize:64, fontWeight:900, color:'rgba(255,255,255,0.12)' }}>{school.name[0]}</span>
                       </div>
