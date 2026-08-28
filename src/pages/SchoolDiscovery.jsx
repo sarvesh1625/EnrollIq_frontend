@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import SchoolLanding from './SchoolLanding'
 import api from '../api/axios'
 
-const BASE_URL = 'http://localhost:5000'
+const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '')
 const BOARDS   = ['All','CBSE','ICSE','State Board','IB','IGCSE']
 const CITIES   = ['Hyderabad','Bangalore','Chennai','Mumbai','Delhi','Pune']
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../api/axios'
 
-const BASE = 'http://localhost:5000'
+const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '')
 
 // ── Chatbot ───────────────────────────────────────────────────────────────────
 function Chatbot({ school }) {
@@ -175,7 +175,7 @@ function EnquiryModal({ school, onClose }) {
   const handleSubmit = async e => {
     e.preventDefault(); setLoading(true); setError('')
     try {
-      await api.post('/leads/public', { ...form, school_id: school.id })
+      await api.post('/discovery/enquire', { ...form, school_id: school.id })
       setStep(2)
     } catch (err) { setError(err.response?.data?.message || 'Failed. Try again.') }
     finally { setLoading(false) }
@@ -470,33 +470,6 @@ export default function SchoolLanding({ school: initial, onBack }) {
           </div>
         )}
 
-        {/* Faculty */}
-        {school.faculty?.length > 0 && (
-          <div style={{ marginBottom:'clamp(36px,6vw,56px)' }}>
-            <p style={{ fontSize:11,fontWeight:700,color:'#12a38a',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Our Team</p>
-            <h2 style={{ fontFamily:'Georgia,serif',fontSize:'clamp(24px,5vw,32px)',fontWeight:700,color:'#1a1814',marginBottom:24 }}>Meet our faculty</h2>
-            <div className="sl-faculty" style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:20 }}>
-              {school.faculty.map(member=>(
-                <div key={member.id} style={{ background:'#fff',borderRadius:16,padding:'20px',textAlign:'center',border:'1px solid #eee',boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
-                  {member.photo_url ? (
-                    <img src={`${BASE}${member.photo_url}`} alt={member.name}
-                      style={{ width:92,height:92,borderRadius:'50%',objectFit:'cover',margin:'0 auto 14px',display:'block',border:'3px solid #e7f7f2' }} />
-                  ) : (
-                    <div style={{ width:92,height:92,borderRadius:'50%',margin:'0 auto 14px',
-                      background:'linear-gradient(135deg,#12a38a,#0d8571)',display:'flex',alignItems:'center',
-                      justifyContent:'center',color:'#fff',fontSize:34,fontWeight:700,fontFamily:'Georgia,serif' }}>
-                      {member.name?.[0]?.toUpperCase()||'?'}
-                    </div>
-                  )}
-                  <p style={{ fontSize:16,fontWeight:700,color:'#1a1814',marginBottom:2 }}>{member.name}</p>
-                  {member.role && <p style={{ fontSize:12.5,fontWeight:600,color:'#12a38a',marginBottom:8 }}>{member.role}</p>}
-                  {member.bio && <p style={{ fontSize:12.5,color:'#6b7280',lineHeight:1.6 }}>{member.bio}</p>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Testimonials */}
         {testimonials.length > 0 && (
           <div style={{ marginBottom:'clamp(36px,6vw,56px)' }}>
@@ -621,7 +594,6 @@ export default function SchoolLanding({ school: initial, onBack }) {
           .sl-stat-item:nth-child(2) { border-right: none !important; }
           .sl-stat-item:nth-child(1), .sl-stat-item:nth-child(2) { border-bottom: 1px solid rgba(255,255,255,0.07); }
           .sl-gallery { grid-template-columns: 1fr 1fr !important; }
-          .sl-faculty { grid-template-columns: 1fr 1fr !important; }
           .sl-gallery-item { grid-column: span 1 !important; aspect-ratio: 1/1 !important; }
           .sl-form-grid { grid-template-columns: 1fr !important; }
         }
