@@ -43,10 +43,16 @@ export default function SchoolProfile() {
   const [slug,      setSlug]      = useState('')
   const [bannerPreview, setBannerPreview] = useState(null)
   const [gallery,   setGallery]   = useState([])
+  const [faculty,   setFaculty]   = useState([])
+  const [uploadingF,setUploadingF]= useState(false)
+  const [facultyForm, setFacultyForm] = useState({ name:'', designation:'', subject:'', years_experience:'', bio:'' })
+  const [facultyPhotoFile, setFacultyPhotoFile] = useState(null)
+  const [facultyPhotoPreview, setFacultyPhotoPreview] = useState(null)
   const [activeTab, setActiveTab] = useState('basic')
 
   const bannerRef  = useRef(null)
   const galleryRef = useRef(null)
+  const facultyPhotoRef = useRef(null)
 
   // Form state — all school profile fields
   const [form, setForm] = useState({
@@ -115,6 +121,7 @@ export default function SchoolProfile() {
     }).catch(() => {})
 
     api.get('/discovery/gallery').then(res => setGallery(res.data)).catch(() => {})
+    api.get('/discovery/faculty').then(res => setFaculty(res.data)).catch(() => {})
     api.get('/ads/my').then(res => setSlug(res.data.ad?.landing_slug || '')).catch(() => {})
   }, [])
 
@@ -203,6 +210,42 @@ export default function SchoolProfile() {
     showToast('Photo removed')
   }
 
+  // Faculty
+  const handleFacultyPhotoChange = e => {
+    const file = e.target.files[0]; if (!file) return
+    setFacultyPhotoFile(file)
+    const reader = new FileReader()
+    reader.onload = ev => setFacultyPhotoPreview(ev.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  const handleAddFaculty = async () => {
+    if (!facultyForm.name.trim()) { showToast('❌ Name is required'); return }
+    const fd = new FormData()
+    fd.append('name', facultyForm.name)
+    fd.append('designation', facultyForm.designation)
+    fd.append('subject', facultyForm.subject)
+    fd.append('years_experience', facultyForm.years_experience)
+    fd.append('bio', facultyForm.bio)
+    if (facultyPhotoFile) fd.append('photo', facultyPhotoFile)
+    setUploadingF(true)
+    try {
+      const res = await api.post('/discovery/faculty', fd, { headers:{ 'Content-Type':'multipart/form-data' } })
+      setFaculty(prev => [...prev, res.data])
+      setFacultyForm({ name:'', designation:'', subject:'', years_experience:'', bio:'' })
+      setFacultyPhotoFile(null); setFacultyPhotoPreview(null)
+      showToast('✅ Faculty member added!')
+    } catch (err) { showToast('❌ ' + (err.response?.data?.message || 'Failed to add')) }
+    finally { setUploadingF(false) }
+  }
+
+  const deleteFaculty = async id => {
+    if (!confirm('Remove this faculty member?')) return
+    await api.delete(`/discovery/faculty/${id}`).catch(() => {})
+    setFaculty(prev => prev.filter(f => f.id !== id))
+    showToast('Faculty member removed')
+  }
+
   // Save all
   const handleSave = async () => {
     setSaving(true)
@@ -218,6 +261,7 @@ export default function SchoolProfile() {
     { key:'location',   label:'Location'      },
     { key:'facilities', label:'Facilities'    },
     { key:'highlights', label:'Highlights'    },
+    { key:'faculty',    label:'Faculty'       },
     { key:'banner',     label:'Banner & Photos'},
   ]
 
@@ -540,6 +584,67 @@ export default function SchoolProfile() {
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── FACULTY ── */}
+          {activeTab === 'faculty' && (
+            <div>
+              <p style={SECTION_TITLE}>Faculty & Teaching Staff</p>
+              <p style={{ fontSize:13, color:'#9ca3af', marginBottom:20, marginTop:-10 }}>
+                Showcase your teachers on the public school page. Parents love seeing who'll be teaching their child.
+              </p>
+
+              {faculty.length > 0 && (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:14, marginBottom:24 }}>
+                  {faculty.map(f => (
+                    <div key={f.id} style={{ position:'relative', border:'1.5px solid #f0ede8', borderRadius:14, padding:16, background:'white' }}>
+                      <button onClick={() => deleteFaculty(f.id)}
+                        style={{ position:'absolute', top:10, right:10, background:'#f8f6f1', border:'none', borderRadius:8, width:26, height:26, cursor:'pointer', fontSize:13, color:'#9ca3af' }}>
+                        ✕
+                      </button>
+                      <div style={{ width:64, height:64, borderRadius:'50%', overflow:'hidden', background:'#f8f6f1', marginBottom:10, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        {f.photo_url
+                          ? <img src={f.photo_url} alt={f.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                          : <span style={{ fontSize:24, color:'#d1d5db' }}>👤</span>}
+                      </div>
+                      <p style={{ fontSize:14, fontWeight:700, color:'#1a1814' }}>{f.name}</p>
+                      {f.designation && <p style={{ fontSize:12, color:'#d4521a', fontWeight:600, marginTop:2 }}>{f.designation}</p>}
+                      {f.subject && <p style={{ fontSize:12, color:'#6b7280', marginTop:2 }}>Teaches {f.subject}</p>}
+                      {f.years_experience && <p style={{ fontSize:11, color:'#9ca3af', marginTop:4 }}>{f.years_experience}+ years experience</p>}
+                      {f.bio && <p style={{ fontSize:12, color:'#6b7280', marginTop:8, lineHeight:1.5 }}>{f.bio}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new faculty */}
+              <div style={{ border:'1.5px dashed #e5e7eb', borderRadius:14, padding:18 }}>
+                <p style={{ fontSize:13, fontWeight:600, color:'#1a1814', marginBottom:14 }}>Add a faculty member</p>
+                <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+                  <div style={{ flexShrink:0 }}>
+                    <div onClick={() => facultyPhotoRef.current?.click()}
+                      style={{ width:80, height:80, borderRadius:'50%', overflow:'hidden', background:'#f8f6f1', border:'2px dashed #e5e7eb', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      {facultyPhotoPreview
+                        ? <img src={facultyPhotoPreview} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                        : <span style={{ fontSize:11, color:'#9ca3af', textAlign:'center', padding:4 }}>📷 Photo</span>}
+                    </div>
+                    <input ref={facultyPhotoRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleFacultyPhotoChange} />
+                  </div>
+                  <div style={{ flex:'1 1 260px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                    <input value={facultyForm.name} onChange={e => setFacultyForm(p=>({...p,name:e.target.value}))} placeholder="Name *" style={INPUT} />
+                    <input value={facultyForm.designation} onChange={e => setFacultyForm(p=>({...p,designation:e.target.value}))} placeholder="Designation (e.g. Principal)" style={INPUT} />
+                    <input value={facultyForm.subject} onChange={e => setFacultyForm(p=>({...p,subject:e.target.value}))} placeholder="Subject taught" style={INPUT} />
+                    <input value={facultyForm.years_experience} onChange={e => setFacultyForm(p=>({...p,years_experience:e.target.value.replace(/\D/g,'')}))} placeholder="Years of experience" style={INPUT} />
+                    <textarea value={facultyForm.bio} onChange={e => setFacultyForm(p=>({...p,bio:e.target.value}))} placeholder="Short bio (optional)" rows={2}
+                      style={{ ...INPUT, gridColumn:'1 / -1', resize:'vertical' }} />
+                  </div>
+                </div>
+                <button onClick={handleAddFaculty} disabled={uploadingF}
+                  style={{ marginTop:14, background:'#1a1814', color:'white', border:'none', borderRadius:10, padding:'9px 20px', fontSize:13, fontWeight:600, cursor:'pointer', opacity:uploadingF?0.6:1 }}>
+                  {uploadingF ? 'Adding...' : '+ Add Faculty Member'}
+                </button>
+              </div>
             </div>
           )}
 

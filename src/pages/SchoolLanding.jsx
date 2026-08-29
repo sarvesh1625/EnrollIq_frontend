@@ -296,6 +296,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
   const [school,      setSchool]      = useState(initial)
   const [testimonials,setTestimonials]= useState([])
   const [gallery,     setGallery]     = useState([])
+  const [faculty,     setFaculty]     = useState([])
   const [showEnquiry, setShowEnquiry] = useState(false)
   const [lightbox,    setLightbox]    = useState(null)
   const [loading,     setLoading]     = useState(true)
@@ -306,7 +307,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
       api.get(`/discovery/schools/${initial.id}`),
       api.get(`/discovery/school/${initial.id}/testimonials`),
     ]).then(([sc, tm]) => {
-      if (sc.status==='fulfilled') { setSchool(sc.value.data); setGallery(sc.value.data.gallery||[]) }
+      if (sc.status==='fulfilled') { setSchool(sc.value.data); setGallery(sc.value.data.gallery||[]); setFaculty(sc.value.data.faculty||[]) }
       if (tm.status==='fulfilled') setTestimonials(tm.value.data)
     }).finally(()=>setLoading(false))
   },[initial?.id])
@@ -417,6 +418,30 @@ export default function SchoolLanding({ school: initial, onBack }) {
                     {h.heading && <p style={{ fontSize:14,fontWeight:700,color:'#1a1814',lineHeight:1.5,marginBottom:2 }}>{h.heading}</p>}
                     {h.content && <p style={{ fontSize:13,color:'#4b5563',lineHeight:1.6 }}>{h.content}</p>}
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Faculty */}
+        {faculty.length > 0 && (
+          <div style={{ marginBottom:'clamp(36px,6vw,56px)' }}>
+            <p style={{ fontSize:11,fontWeight:700,color:'#d4521a',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Meet The Team</p>
+            <h2 style={{ fontFamily:'Georgia,serif',fontSize:'clamp(24px,5vw,32px)',fontWeight:700,color:'#1a1814',marginBottom:24 }}>Our Faculty</h2>
+            <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))',gap:24 }}>
+              {faculty.map(f=>(
+                <div key={f.id} style={{ textAlign:'center' }}>
+                  <div style={{ width:96,height:96,borderRadius:'50%',overflow:'hidden',background:'#f3f4f6',margin:'0 auto 14px',border:'3px solid #fdf0ea' }}>
+                    {f.photo_url
+                      ? <img src={f.photo_url} alt={f.name} style={{ width:'100%',height:'100%',objectFit:'cover' }} />
+                      : <div style={{ width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:32,color:'#d1d5db' }}>👤</div>}
+                  </div>
+                  <p style={{ fontSize:15,fontWeight:700,color:'#1a1814' }}>{f.name}</p>
+                  {f.designation && <p style={{ fontSize:12,color:'#d4521a',fontWeight:600,marginTop:2 }}>{f.designation}</p>}
+                  {f.subject && <p style={{ fontSize:12,color:'#6b7280',marginTop:2 }}>{f.subject}</p>}
+                  {f.years_experience && <p style={{ fontSize:11,color:'#9ca3af',marginTop:4 }}>{f.years_experience}+ yrs experience</p>}
+                  {f.bio && <p style={{ fontSize:12,color:'#6b7280',marginTop:8,lineHeight:1.6 }}>{f.bio}</p>}
                 </div>
               ))}
             </div>
