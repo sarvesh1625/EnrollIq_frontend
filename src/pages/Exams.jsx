@@ -176,7 +176,7 @@ function SubjectModal({ onClose, onSaved, showToast }) {
 }
 
 /* ─── Printable Report Card ───────────────────────────────────── */
-function ReportCard({ student, exam, rows, onClose }) {
+function ReportCard({ student, exam, rows, onClose, aiExamEnabled }) {
   const total    = rows.reduce((a, r) => a + r.marks, 0)
   const maxTotal = rows.reduce((a, r) => a + r.max, 0)
   const pct      = maxTotal ? (total / maxTotal) * 100 : 0
@@ -679,7 +679,7 @@ function MarkEntry({ exam, subjects, onBack, showToast }) {
       )}
 
       {rcFor && (
-        <ReportCard student={rcFor.student} exam={exam} rows={rcFor.rows} onClose={() => setRcFor(null)} />
+        <ReportCard student={rcFor.student} exam={exam} rows={rcFor.rows} onClose={() => setRcFor(null)} aiExamEnabled={aiExamEnabled} />
       )}
 
       {showViewPaper && (

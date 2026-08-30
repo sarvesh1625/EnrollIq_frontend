@@ -5,6 +5,7 @@ import {
   getAnnouncements, sendAnnouncement,
   getNotifications, markAllRead,
 } from '../api/communication'
+import { getStudents } from '../api/students'
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 const MOCK_STATS = { sent_today: 24, total_messages: 312, announcements_sent: 18, failed: 2 }
@@ -32,14 +33,6 @@ const MOCK_NOTIFICATIONS = [
   { id:5, type:'system',            title:'Weekly report ready', body:'April Week 1 CRM report is available in Analytics', link:'/analytics', is_read:true, created_at:'2026-04-07T07:00:00Z' },
 ]
 
-const MOCK_STUDENTS = [
-  { id:1, name:'Arjun Pillai',  roll_number:'S-001', class:'Grade 4', parent_name:'Suresh Pillai',  parent_phone:'9876500007' },
-  { id:2, name:'Deepa Kumar',   roll_number:'S-002', class:'Grade 2', parent_name:'Rakesh Kumar',   parent_phone:'9876500008' },
-  { id:3, name:'Ankit Verma',   roll_number:'S-005', class:'Grade 8', parent_name:'Naresh Verma',   parent_phone:'9876500003' },
-  { id:4, name:'Priya Nair',    roll_number:'S-004', class:'Grade 3', parent_name:'Ajay Nair',      parent_phone:'9876500002' },
-  { id:5, name:'Mohan Reddy',   roll_number:'S-003', class:'Grade 6', parent_name:'Krishnam Reddy', parent_phone:'9876500005' },
-]
-
 const GRADES = ['Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10']
 
 function timeAgo(iso) {
@@ -62,11 +55,30 @@ const NOTIF_ICON = {
 
 // ── Send Message Modal ────────────────────────────────────────────────────────
 function SendMessageModal({ onClose, onSent }) {
-  const [form, setForm]   = useState({ student_id:'', channel:'WhatsApp', body:'' })
+  const [form, setForm]   = useState({ channel:'WhatsApp', body:'' })
   const [sending, setSending] = useState(false)
   const set = f => e => setForm(p => ({ ...p, [f]: e.target.value }))
 
-  const selectedStudent = MOCK_STUDENTS.find(s => s.id === parseInt(form.student_id))
+  // Real student search — replaces the old hardcoded MOCK_STUDENTS dropdown,
+  // which was sending fake ids/phone numbers to the backend and meant
+  // messages never reached (or reached the wrong) real parent.
+  const [query,   setQuery]   = useState('')
+  const [results, setResults] = useState([])
+  const [searching, setSearching] = useState(false)
+  const [selectedStudent, setSelectedStudent] = useState(null)
+
+  useEffect(() => {
+    if (selectedStudent) return
+    if (!query.trim()) { setResults([]); return }
+    setSearching(true)
+    const t = setTimeout(() => {
+      getStudents({ search: query.trim(), limit: 8 })
+        .then(res => setResults(res.data.students || []))
+        .catch(() => setResults([]))
+        .finally(() => setSearching(false))
+    }, 350)
+    return () => clearTimeout(t)
+  }, [query, selectedStudent])
 
   const templates = [
     'Fee reminder: Your fee payment is due. Please clear at the earliest.',
@@ -77,13 +89,14 @@ function SendMessageModal({ onClose, onSent }) {
 
   const handleSend = async e => {
     e.preventDefault()
+    if (!selectedStudent) return
     setSending(true)
     try {
       await sendMessage({
         ...form,
-        student_id:      selectedStudent?.id,
-        recipient_name:  selectedStudent?.parent_name,
-        recipient_phone: selectedStudent?.parent_phone,
+        student_id:      selectedStudent.id,
+        recipient_name:  selectedStudent.parent_name,
+        recipient_phone: selectedStudent.parent_phone,
       })
       onSent()
     } catch { onSent() }
@@ -100,12 +113,39 @@ function SendMessageModal({ onClose, onSent }) {
         <form onSubmit={handleSend} className="p-6 flex flex-col gap-4">
           <div>
             <label className="label">Student *</label>
-            <select className="input" value={form.student_id} onChange={set('student_id')} required>
-              <option value="">Select student</option>
-              {MOCK_STUDENTS.map(s => (
-                <option key={s.id} value={s.id}>{s.name} — {s.parent_name} ({s.parent_phone})</option>
-              ))}
-            </select>
+            {selectedStudent ? (
+              <div className="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2.5 bg-cream">
+                <div>
+                  <p className="text-sm font-medium text-ink">{selectedStudent.name} · {selectedStudent.class}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{selectedStudent.parent_name} ({selectedStudent.parent_phone})</p>
+                </div>
+                <button type="button" onClick={() => { setSelectedStudent(null); setQuery('') }}
+                  className="text-xs text-gray-400 hover:text-ink">Change</button>
+              </div>
+            ) : (
+              <div className="relative">
+                <input className="input" placeholder="Search student by name, roll no, or parent phone..."
+                  value={query} onChange={e => setQuery(e.target.value)} required={!selectedStudent} />
+                {query.trim() && (
+                  <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                    {searching ? (
+                      <p className="text-xs text-gray-400 px-3 py-3">Searching...</p>
+                    ) : results.length === 0 ? (
+                      <p className="text-xs text-gray-400 px-3 py-3">No students found</p>
+                    ) : results.map(s => (
+                      <button key={s.id} type="button"
+                        onClick={() => { setSelectedStudent(s); setResults([]) }}
+                        className="w-full text-left px-3 py-2.5 hover:bg-cream border-b border-gray-50 last:border-0">
+                        <p className="text-sm font-medium text-ink">{s.name} · {s.class}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {s.parent_name || 'No parent name'} {s.parent_phone ? `(${s.parent_phone})` : '— no phone on file'}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div>
             <label className="label">Channel</label>
@@ -145,11 +185,16 @@ function SendMessageModal({ onClose, onSent }) {
             <p className="text-xs text-gray-400 mt-1 text-right">{form.body.length} chars</p>
           </div>
           <div className="flex gap-3 pt-1">
-            <button type="submit" disabled={sending} className="btn-primary flex-1 disabled:opacity-60">
+            <button type="submit" disabled={sending || !selectedStudent?.parent_phone}
+              className="btn-primary flex-1 disabled:opacity-60"
+              title={selectedStudent && !selectedStudent.parent_phone ? 'This student has no parent phone on file' : ''}>
               {sending ? 'Sending...' : `Send via ${form.channel}`}
             </button>
             <button type="button" onClick={onClose} className="btn-ghost">Cancel</button>
           </div>
+          {selectedStudent && !selectedStudent.parent_phone && (
+            <p className="text-xs text-red-500 -mt-2">⚠ No parent phone number on file for this student — add one in Students before sending.</p>
+          )}
         </form>
       </div>
     </div>
