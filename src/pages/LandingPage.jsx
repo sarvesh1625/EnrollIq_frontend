@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
 // Logo lives in /public — Vite serves it at the root
-const logo = '/Logo.jpeg'
+const logo = '/Logo.jpg'
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 const TYPE = {
@@ -84,7 +84,7 @@ function Nav({ onDemo, menuOpen, setMenuOpen }) {
         padding: '0 clamp(16px,5vw,56px)', height: 68,
       }}>
         <a href="#top" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <img src={logo} alt="EnrollIQ" style={{ height: 34, width: 'auto' }} />
+          <img src={logo} alt="EnrollIQ" style={{ height: 56, width: 'auto' }} />
         </a>
         <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 30 }}>
           {links.map(([l, h]) => (
@@ -434,7 +434,7 @@ function Footer({ onDemo }) {
       <div style={{ maxWidth: 1120, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 40 }} className="footer-grid">
         <div>
           <div style={{ display:'inline-block', background:'#fff', padding:'8px 12px', borderRadius:10, marginBottom:14 }}>
-            <img src={logo} alt="EnrollIQ" style={{ height: 30, display:'block' }} />
+            <img src={logo} alt="EnrollIQ" style={{ height: 56, display:'block' }} />
           </div>
           <p style={{ fontSize: 14, lineHeight: 1.6, maxWidth: 300, color: 'rgba(255,255,255,0.6)' }}>
             The AI-powered education growth platform. Built for institutions that lead.
