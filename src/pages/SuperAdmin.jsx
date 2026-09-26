@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../api/axios'
 
 const saApi = {
@@ -10,6 +10,10 @@ const saApi = {
   updateSchool: (id,d,tok)=>api.patch(`/superadmin/school/${id}`,d,{ headers:{ Authorization:`Bearer ${tok}` } }),
   impersonate:  (id,tok) => api.post(`/superadmin/impersonate/${id}`,{},{ headers:{ Authorization:`Bearer ${tok}` } }),
   resetPass:    (uid,pw,tok)=>api.post(`/superadmin/reset-password/${uid}`,{new_password:pw},{ headers:{ Authorization:`Bearer ${tok}` } }),
+  getSupport:   (tok,status) => api.get('/support/admin/messages'+(status?`?status=${status}`:''), { headers:{ Authorization:`Bearer ${tok}` } }),
+  getSupportThread: (id,tok) => api.get(`/support/admin/${id}/messages`, { headers:{ Authorization:`Bearer ${tok}` } }),
+  replySupport: (id,message,tok) => api.post(`/support/admin/${id}/messages`, { message }, { headers:{ Authorization:`Bearer ${tok}` } }),
+  updateSupport:(id,d,tok)   => api.patch(`/support/admin/messages/${id}`, d, { headers:{ Authorization:`Bearer ${tok}` } }),
 }
 
 const PLAN_STYLE   = { basic:{ bg:'#f3f4f6',text:'#6b7280' }, premium:{ bg:'#eff6ff',text:'#2563eb' }, enterprise:{ bg:'#fdf4ff',text:'#7c3aed' } }
@@ -470,6 +474,105 @@ function SchoolDrawer({ school, token, onClose, onUpdated }) {
 }
 
 // ── Main Super Admin App ──────────────────────────────────────────────────────
+// ── Support ticket thread (superadmin view) ─────────────────────────────────
+const SUPPORT_STATUS_STYLE = {
+  new:         { bg:'#fef3c7', color:'#92400e', label:'Open' },
+  in_progress: { bg:'#dbeafe', color:'#1e40af', label:'In progress' },
+  resolved:    { bg:'#dcfce7', color:'#15803d', label:'Resolved' },
+}
+
+function SupportBubble({ msg }) {
+  const mine = msg.sender_role === 'superadmin'
+  return (
+    <div style={{ display:'flex', justifyContent: mine ? 'flex-end' : 'flex-start', marginBottom:10 }}>
+      <div style={{ maxWidth:'75%' }}>
+        <div style={{
+          background: mine ? '#1a1814' : '#f3f4f6', color: mine ? 'white' : '#1a1814',
+          borderRadius: 14, borderBottomRightRadius: mine ? 4 : 14, borderBottomLeftRadius: mine ? 14 : 4,
+          padding: '10px 14px', fontSize: 14,
+        }}>{msg.message}</div>
+        <p style={{ fontSize:11, color:'#9ca3af', marginTop:3, textAlign: mine ? 'right' : 'left' }}>
+          {msg.sender_name} · {new Date(msg.created_at).toLocaleString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function SupportThreadModal({ ticketId, token, onClose }) {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [draft, setDraft] = useState('')
+  const [sending, setSending] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const bottomRef = useRef(null)
+
+  const load = () => {
+    saApi.getSupportThread(ticketId, token).then(r => setData(r.data)).catch(() => {}).finally(() => setLoading(false))
+  }
+  useEffect(load, [ticketId])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:'smooth' }) }, [data])
+
+  const handleSend = async () => {
+    if (!draft.trim()) return
+    setSending(true)
+    try { await saApi.replySupport(ticketId, draft.trim(), token); setDraft(''); load() }
+    catch {} finally { setSending(false) }
+  }
+
+  const handleStatus = async (status) => {
+    setUpdating(true)
+    try { await saApi.updateSupport(ticketId, { status }, token); load() }
+    catch {} finally { setUpdating(false) }
+  }
+
+  const st = data ? (SUPPORT_STATUS_STYLE[data.ticket.status] || SUPPORT_STATUS_STYLE.new) : null
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:50,
+      display:'flex', alignItems:'center', justifyContent:'center', padding:16 }} onClick={onClose}>
+      <div style={{ background:'white', borderRadius:18, width:'100%', maxWidth:560, maxHeight:'85vh',
+        display:'flex', flexDirection:'column', overflow:'hidden' }} onClick={e => e.stopPropagation()}>
+
+        <div style={{ padding:'16px 20px', borderBottom:'1px solid #f0ede8', display:'flex', justifyContent:'space-between', alignItems:'center', gap:10 }}>
+          <div style={{ minWidth:0 }}>
+            <p style={{ fontWeight:700, color:'#1a1814' }}>{data?.ticket.subject || 'Loading…'}</p>
+            <p style={{ fontSize:12, color:'#9ca3af' }}>{data?.ticket.school_name}</p>
+          </div>
+          <div style={{ display:'flex', gap:8, alignItems:'center', flexShrink:0 }}>
+            {data && (
+              <select value={data.ticket.status} disabled={updating} onChange={e => handleStatus(e.target.value)}
+                style={{ fontSize:12, border:'1px solid #e5e7eb', borderRadius:8, padding:'4px 8px', background:st.bg, color:st.color, fontWeight:600 }}>
+                <option value="new">Open</option>
+                <option value="in_progress">In progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            )}
+            <button onClick={onClose} style={{ fontSize:22, color:'#9ca3af', background:'none', border:'none', cursor:'pointer' }}>×</button>
+          </div>
+        </div>
+
+        <div style={{ flex:1, overflowY:'auto', padding:'16px 20px' }}>
+          {loading ? <p style={{ fontSize:13, color:'#9ca3af' }}>Loading…</p>
+           : (data?.messages || []).map(m => <SupportBubble key={m.id} msg={m} />)}
+          <div ref={bottomRef} />
+        </div>
+
+        <div style={{ padding:'12px 16px', borderTop:'1px solid #f0ede8', display:'flex', gap:8 }}>
+          <textarea rows={1} value={draft} onChange={e => setDraft(e.target.value)}
+            placeholder="Type a reply…"
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
+            style={{ flex:1, border:'1px solid #e5e7eb', borderRadius:10, padding:'10px 12px', fontSize:14, resize:'none' }} />
+          <button onClick={handleSend} disabled={sending || !draft.trim()} className="btn-primary"
+            style={{ opacity: (sending || !draft.trim()) ? 0.6 : 1 }}>
+            {sending ? '…' : 'Send'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function SuperDashboard({ token, admin, onLogout }) {
   const [tab,     setTab]     = useState('dashboard')
   const [dash,    setDash]    = useState(null)
@@ -479,6 +582,9 @@ function SuperDashboard({ token, admin, onLogout }) {
   const [showAdd, setShowAdd] = useState(false)
   const [drawer,  setDrawer]  = useState(null)
   const [toast,   setToast]   = useState('')
+  const [support, setSupport] = useState({ requests:[], counts:{} })
+  const [supportFilter, setSupportFilter] = useState('')
+  const [supportLoading, setSupportLoading] = useState(false)
 
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
@@ -495,6 +601,17 @@ function SuperDashboard({ token, admin, onLogout }) {
   }
 
   useEffect(() => { loadAll() }, [])
+
+  const loadSupport = async (status = supportFilter) => {
+    setSupportLoading(true)
+    try {
+      const r = await saApi.getSupport(token, status || undefined)
+      setSupport(r.data)
+    } catch {} finally { setSupportLoading(false) }
+  }
+  useEffect(() => { if (tab === 'support') loadSupport() }, [tab])
+
+  const [openTicket, setOpenTicket] = useState(null)
 
   const filtered = schools.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -526,6 +643,7 @@ function SuperDashboard({ token, admin, onLogout }) {
           {[
             { key:'dashboard', icon:'▦', label:'Dashboard' },
             { key:'schools',   icon:'🏫', label:'Schools'   },
+            { key:'support',   icon:'💬', label:'Support'+(support.counts?.new_count ? ` (${support.counts.new_count})` : '') },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={'sidebar-link flex-1 md:w-full ' + (tab===t.key ? 'active' : '')}>
@@ -665,8 +783,79 @@ function SuperDashboard({ token, admin, onLogout }) {
               </div>
             </>
           )}
+
+          {/* Support */}
+          {tab === 'support' && (
+            <>
+              <div className="mb-6 flex justify-between items-end flex-wrap gap-3">
+                <div>
+                  <h2 className="font-serif text-2xl sm:text-3xl font-bold text-ink">Support Inbox</h2>
+                  <p className="text-gray-400 text-sm mt-1">Messages from every school, across the platform</p>
+                </div>
+                <div className="flex gap-2">
+                  {['', 'new', 'in_progress', 'resolved'].map(s => (
+                    <button key={s || 'all'}
+                      onClick={() => { setSupportFilter(s); loadSupport(s) }}
+                      className={'btn-ghost text-xs ' + (supportFilter === s ? 'active' : '')}
+                      style={supportFilter === s ? { background:'#1a1814', color:'white' } : {}}>
+                      {s === '' ? 'All' : s === 'new' ? 'Open' : s === 'in_progress' ? 'In progress' : 'Resolved'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="stat-card text-center">
+                  <p className="label text-xs">Open</p>
+                  <p className="font-serif text-2xl font-bold mt-1 text-amber-600">{support.counts?.new_count || 0}</p>
+                </div>
+                <div className="stat-card text-center">
+                  <p className="label text-xs">In progress</p>
+                  <p className="font-serif text-2xl font-bold mt-1 text-blue-600">{support.counts?.in_progress_count || 0}</p>
+                </div>
+                <div className="stat-card text-center">
+                  <p className="label text-xs">Resolved</p>
+                  <p className="font-serif text-2xl font-bold mt-1 text-green-600">{support.counts?.resolved_count || 0}</p>
+                </div>
+              </div>
+
+              {supportLoading ? <p className="text-sm text-gray-400">Loading…</p>
+               : (support.requests || []).length === 0 ? (
+                <div className="bg-white rounded-2xl p-10 text-center text-gray-400 text-sm">No messages yet.</div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {support.requests.map(r => {
+                    const st = { new:{bg:'#fef3c7',color:'#92400e',label:'Open'}, in_progress:{bg:'#dbeafe',color:'#1e40af',label:'In progress'}, resolved:{bg:'#dcfce7',color:'#15803d',label:'Resolved'} }[r.status]
+                    return (
+                    <button key={r.id} onClick={() => setOpenTicket(r.id)}
+                      className="bg-white rounded-2xl p-4 border border-gray-100 text-left hover:border-gray-200 transition-colors w-full">
+                      <div className="flex justify-between items-start gap-3 flex-wrap mb-1">
+                        <div>
+                          <p className="font-semibold text-ink">{r.subject}</p>
+                          <p className="text-xs text-gray-400">{r.school_name} · {r.name} · {new Date(r.created_at).toLocaleString('en-IN')}</p>
+                        </div>
+                        <span style={{ fontSize:11, fontWeight:600, padding:'3px 10px', borderRadius:999, background:st?.bg, color:st?.color, whiteSpace:'nowrap' }}>{st?.label}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 truncate">
+                        {r.last_sender === 'superadmin' ? '↩️ You: ' : ''}{r.last_message}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {r.message_count} message{r.message_count!==1?'s':''}
+                        {r.email && <> · ✉️ {r.email}</>}{r.phone && <> · 📞 {r.phone}</>}
+                      </p>
+                    </button>
+                  )})}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
+
+      {openTicket && (
+        <SupportThreadModal ticketId={openTicket} token={token}
+          onClose={() => { setOpenTicket(null); loadSupport() }} />
+      )}
 
       {drawer && (
         <SchoolDrawer school={drawer} token={token}

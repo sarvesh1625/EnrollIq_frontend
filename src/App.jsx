@@ -28,6 +28,7 @@ import SchoolProfile  from './pages/SchoolProfile'
 import AdsManagement  from './pages/AdsManagement'
 import RoleDashboard from './pages/RoleDashboard'
 import SchoolKit from './pages/Schoolkit'
+import Support from './pages/Support'
 import LiveTracking from "./pages/Livetracking";
 import Cameras from './pages/Cameras'
 import AcademicYear from "./pages/Academicyear";
@@ -89,6 +90,7 @@ export default function App() {
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/kit" element={<SchoolKit />} />
+        <Route path="/support" element={<Support />} />
       </Routes>
     </BrowserRouter>
   )

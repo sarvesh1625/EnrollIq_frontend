@@ -7,6 +7,7 @@ const attendanceApi = {
   getAttendance: (p)     => api.get('/attendance', { params: p }),
   getStudents:   (cls)   => api.get('/students', { params: { class: cls, limit: 200 } }),
   markBulk:      (data)  => api.post('/attendance/mark-bulk', data),
+  getHistory:    (p)     => api.get('/attendance/history', { params: p }),
 }
 
 const CLASSES = ['All','Pre-KG','LKG','UKG','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10']
@@ -34,6 +35,22 @@ export default function Attendance() {
   const [saving,        setSaving]        = useState(false)
   const [saved,         setSaved]         = useState(false)
   const [records,       setRecords]       = useState([])
+  const [historyRange,  setHistoryRange]  = useState('month')   // 'today' | 'week' | 'month' | 'year' | 'custom'
+  const [customFrom,    setCustomFrom]    = useState(new Date(new Date().setDate(new Date().getDate()-30)).toISOString().slice(0,10))
+  const [customTo,      setCustomTo]      = useState(new Date().toISOString().slice(0,10))
+  const [historyData,   setHistoryData]   = useState(null)
+  const [historyLoading,setHistoryLoading]= useState(false)
+  const [alreadyMarked, setAlreadyMarked] = useState(false)
+
+  const getRangeDates = (key) => {
+    const today = new Date()
+    const to = today.toISOString().slice(0,10)
+    if (key === 'today') return { from: to, to }
+    if (key === 'week')  { const d = new Date(today); d.setDate(d.getDate()-6); return { from: d.toISOString().slice(0,10), to } }
+    if (key === 'month') { const d = new Date(today.getFullYear(), today.getMonth(), 1); return { from: d.toISOString().slice(0,10), to } }
+    if (key === 'year')  { const d = new Date(today.getFullYear(), 0, 1); return { from: d.toISOString().slice(0,10), to } }
+    return { from: customFrom, to: customTo }
+  }
 
   useEffect(() => {
     attendanceApi.getSummary().then(r => setSummary(r.data)).catch(() => {})
@@ -42,11 +59,19 @@ export default function Attendance() {
   useEffect(() => {
     if (selectedClass && selectedClass !== 'All') {
       attendanceApi.getStudents(selectedClass)
-        .then(r => {
+        .then(async r => {
           const studs = r.data.students || []
           setStudents(studs)
           const init = {}
           studs.forEach(s => { init[s.id] = 'Present' })
+          // If this date already has marked records (e.g. jumping here from History),
+          // load the real saved status per student instead of resetting to Present.
+          try {
+            const existing = await attendanceApi.getAttendance({ date, class: selectedClass })
+            const recs = existing.data.records || []
+            recs.forEach(rec => { init[rec.student_id] = rec.status })
+            setAlreadyMarked(recs.length > 0)
+          } catch { setAlreadyMarked(false) }
           setAttendance(init)
         })
         .catch(() => {
@@ -60,7 +85,7 @@ export default function Attendance() {
           setAttendance({ 1:'Present', 2:'Present', 3:'Absent', 4:'Present', 5:'Late' })
         })
     }
-  }, [selectedClass])
+  }, [selectedClass, date])
 
   useEffect(() => {
     if (tab === 'records') {
@@ -69,6 +94,18 @@ export default function Attendance() {
         .catch(() => setRecords([]))
     }
   }, [tab, date, selectedClass])
+
+  useEffect(() => {
+    if (tab !== 'history') return
+    const { from, to } = getRangeDates(historyRange)
+    setHistoryLoading(true)
+    attendanceApi.getHistory({ from, to, class: selectedClass !== 'All' ? selectedClass : undefined })
+      .then(r => setHistoryData(r.data))
+      .catch(() => setHistoryData(null))
+      .finally(() => setHistoryLoading(false))
+  }, [tab, historyRange, customFrom, customTo, selectedClass])
+
+  const jumpToDate = (d) => { setDate(d); setTab('mark') }
 
   const setStatus = (id, status) => setAttendance(prev => ({ ...prev, [id]: status }))
   const markAll = (status) => {
@@ -127,7 +164,7 @@ export default function Attendance() {
 
         {/* Tabs */}
         <div style={{ display:'flex', gap:3, background:'white', border:'1px solid var(--c-border-2)', borderRadius:8, padding:3, width:'fit-content', marginBottom:16 }}>
-          {[{ k:'mark', l:'Mark attendance' }, { k:'records', l:'Records' }, { k:'summary', l:'Summary' }].map(t => (
+          {[{ k:'mark', l:'Mark attendance' }, { k:'records', l:'Records' }, { k:'history', l:'History' }, { k:'summary', l:'Summary' }].map(t => (
             <button key={t.k} onClick={() => setTab(t.k)}
               style={{ fontSize:12, fontWeight:500, padding:'6px 14px', borderRadius:6, border:'none', cursor:'pointer',
                 background: tab === t.k ? 'var(--c-ink)' : 'transparent', color: tab === t.k ? 'white' : 'var(--c-ink-2)' }}>
@@ -146,6 +183,11 @@ export default function Attendance() {
               </select>
               <button className="btn-ghost" style={{ fontSize:12, padding:'7px 12px' }} onClick={() => markAll('Present')}>✓ All Present</button>
               <button className="btn-ghost" style={{ fontSize:12, padding:'7px 12px' }} onClick={() => markAll('Absent')}>✗ All Absent</button>
+              {alreadyMarked && (
+                <span className="badge" style={{ background:'var(--c-green-lt)', color:'var(--c-green)' }}>
+                  ✓ Already marked for {date} — editing existing record
+                </span>
+              )}
               <div style={{ marginLeft:'auto', display:'flex', gap:14, fontSize:12, fontWeight:600 }}>
                 <span style={{ color:'var(--c-green)' }}>P: {presentCount}</span>
                 <span style={{ color:'var(--c-red)' }}>A: {absentCount}</span>
@@ -217,6 +259,86 @@ export default function Attendance() {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* HISTORY TAB */}
+        {tab === 'history' && (
+          <div>
+            {/* Range filters */}
+            <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap', marginBottom:16 }}>
+              {[{k:'today',l:'Today'},{k:'week',l:'This week'},{k:'month',l:'This month'},{k:'year',l:'This year'},{k:'custom',l:'Custom range'}].map(r => (
+                <button key={r.k} onClick={() => setHistoryRange(r.k)}
+                  style={{ fontSize:12, fontWeight:600, padding:'7px 14px', borderRadius:20, cursor:'pointer',
+                    border: historyRange===r.k ? 'none' : '1px solid var(--c-border-2)',
+                    background: historyRange===r.k ? 'var(--c-ink)' : 'white',
+                    color: historyRange===r.k ? 'white' : 'var(--c-ink-2)' }}>
+                  {r.l}
+                </button>
+              ))}
+              {historyRange === 'custom' && (
+                <>
+                  <input type="date" className="input" style={{ maxWidth:150 }} value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+                  <span style={{ fontSize:12, color:'var(--c-muted)' }}>to</span>
+                  <input type="date" className="input" style={{ maxWidth:150 }} value={customTo} onChange={e => setCustomTo(e.target.value)} />
+                </>
+              )}
+              <select className="input" style={{ maxWidth:150, marginLeft:'auto' }} value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
+                {CLASSES.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+
+            {/* Range summary */}
+            {historyData && (
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14, marginBottom:16 }} className="g-3">
+                <div className="stat-card">
+                  <p className="label">Days in range</p>
+                  <p className="value">{historyData.summary.total_days}</p>
+                </div>
+                <div className="stat-card">
+                  <p className="label">Average attendance</p>
+                  <p className="value" style={{ color:'var(--c-green)' }}>{historyData.summary.avg_attendance_pct}%</p>
+                </div>
+                <div className="stat-card">
+                  <p className="label">Active students{selectedClass!=='All' ? ` (${selectedClass})` : ''}</p>
+                  <p className="value">{historyData.summary.total_active}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="card" style={{ padding:0, overflow:'hidden' }}>
+              <div className="hide-md" style={{ display:'grid', gridTemplateColumns:'1fr 90px 90px 90px 90px 120px 100px', gap:12, padding:'12px 20px', borderBottom:'1px solid var(--c-border)', background:'var(--c-surface-2)' }}>
+                {['Date','Present','Absent','Late','%','Status',''].map((h,i) => <span key={i} style={{ fontSize:11, fontWeight:600, color:'var(--c-muted)', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</span>)}
+              </div>
+              {historyLoading ? (
+                <div className="empty-state"><p className="empty-sub">Loading…</p></div>
+              ) : !historyData || historyData.days.length === 0 ? (
+                <div className="empty-state"><div className="empty-icon">📅</div><p className="empty-sub">No attendance marked in this range yet</p></div>
+              ) : (
+                <div>
+                  {historyData.days.map((d, i) => (
+                    <div key={d.date} style={{ display:'grid', gridTemplateColumns:'1fr 90px 90px 90px 90px 120px 100px', gap:12, alignItems:'center', padding:'12px 20px', borderBottom: i < historyData.days.length-1 ? '1px solid #faf9f7' : 'none' }}>
+                      <span style={{ fontSize:13, fontWeight:600, color:'var(--c-ink)' }}>
+                        {new Date(d.date).toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' })}
+                      </span>
+                      <span className="hide-md" style={{ fontSize:13, color:'var(--c-green)', fontWeight:600 }}>{d.present}</span>
+                      <span className="hide-md" style={{ fontSize:13, color:'var(--c-red)', fontWeight:600 }}>{d.absent}</span>
+                      <span className="hide-md" style={{ fontSize:13, color:'var(--c-amber)', fontWeight:600 }}>{d.late}</span>
+                      <span className="hide-md" style={{ fontSize:13, color:'var(--c-ink-2)' }}>{d.percentage}%</span>
+                      <span className="badge" style={{
+                        background: d.is_complete ? 'var(--c-green-lt)' : d.marked_count > 0 ? 'var(--c-amber-lt)' : '#f3f4f6',
+                        color:      d.is_complete ? 'var(--c-green)'    : d.marked_count > 0 ? 'var(--c-amber)'    : '#6b7280',
+                        justifySelf:'start' }}>
+                        {d.is_complete ? '✓ Marked' : d.marked_count > 0 ? `Partial (${d.marked_count}/${d.total_active})` : 'Not marked'}
+                      </span>
+                      <button className="btn-ghost" style={{ fontSize:11, padding:'5px 10px', justifySelf:'start' }} onClick={() => jumpToDate(d.date)}>
+                        View / Edit
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

@@ -57,7 +57,8 @@ const NAV = [
   { to:'/settings',       icon:'⚙',  label:'Settings'      },
   { to:'/tracking', icon:'🛰️', label:'Live Tracking' },
 { to:'/cameras',  icon:'📹', label:'Cameras' },
-{ to:'/academic', icon:'🎓', label:'Academic Year' }
+{ to:'/academic', icon:'🎓', label:'Academic Year' },
+{ to:'/support',   icon:'💬',  label:'Support'         },
 ]
 
 export default function Sidebar({ onClose, mobile }) {
@@ -148,13 +149,13 @@ export default function Sidebar({ onClose, mobile }) {
 
       {/* Footer */}
       <div className="sb-footer">
-        {role === 'admin' && (
+        {/* {role === 'admin' && (
           <a href="/discover" target="_blank" rel="noreferrer" onClick={go}
             className="sb-link" style={{ color:'var(--c-brand)', marginBottom:2 }}>
             <span className="icon">🔍</span>
             Discovery
           </a>
-        )}
+        )} */}
         <button onClick={handleLogout} className="sb-link"
           style={{ color:'var(--c-muted)' }}
           onMouseEnter={e => { e.currentTarget.style.background='var(--c-red-lt)'; e.currentTarget.style.color='var(--c-red)' }}

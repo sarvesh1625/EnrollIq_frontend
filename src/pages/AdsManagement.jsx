@@ -119,6 +119,164 @@ const PLATFORMS = [
   },
 ]
 
+function GoogleAdsConnect() {
+  const [status, setStatus]   = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [connecting, setConnecting] = useState(false)
+  const [customerId, setCustomerId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const params = new URLSearchParams(window.location.search)
+  const flashState = params.get('google_ads')
+
+  const load = () => {
+    setLoading(true)
+    api.get('/google-ads/status').then(r => setStatus(r.data)).catch(() => setStatus({ connected:false })).finally(() => setLoading(false))
+  }
+  useEffect(load, [])
+
+  const handleConnect = async () => {
+    setConnecting(true)
+    try {
+      const r = await api.get('/google-ads/connect-url')
+      window.location.href = r.data.url
+    } catch (err) {
+      setMsg('❌ ' + (err.response?.data?.message || 'Could not start Google connection'))
+      setConnecting(false)
+    }
+  }
+
+  const handleSaveCustomerId = async () => {
+    setSaving(true)
+    try {
+      await api.post('/google-ads/customer-id', { customer_id: customerId })
+      setMsg('✅ Google Ads account linked — stats will sync within a few hours')
+      load()
+    } catch (err) { setMsg('❌ ' + (err.response?.data?.message || 'Failed to save')) }
+    finally { setSaving(false) }
+  }
+
+  const handleDisconnect = async () => {
+    if (!confirm('Disconnect Google Ads? Stats will stop updating.')) return
+    await api.delete('/google-ads/disconnect')
+    load()
+  }
+
+  if (loading) return <p style={{ fontSize:13, color:'#9ca3af' }}>Checking connection…</p>
+
+  const inr = n => `₹${Number(n||0).toLocaleString('en-IN', { maximumFractionDigits:0 })}`
+  const budgetRemaining = status?.budget_limit != null ? Math.max(0, status.budget_limit - (status.budget_spent||0)) : null
+
+  return (
+    <div style={{ background:'#eff6ff', borderRadius:12, padding:16, marginBottom:16 }}>
+      {flashState === 'connected' && (
+        <div style={{ background:'#f0fdf4', color:'#15803d', fontSize:12, padding:'8px 12px', borderRadius:8, marginBottom:10 }}>
+          ✅ Connected to Google! {params.get('pick_account') && 'Pick your Ads account below to finish.'}
+        </div>
+      )}
+      {flashState === 'error' && (
+        <div style={{ background:'#fef2f2', color:'#dc2626', fontSize:12, padding:'8px 12px', borderRadius:8, marginBottom:10 }}>
+          ❌ Connection failed ({params.get('reason') || 'unknown error'}) — try again.
+        </div>
+      )}
+      {msg && <div style={{ fontSize:12, padding:'8px 12px', marginBottom:10 }}>{msg}</div>}
+
+      {!status?.connected ? (
+        <>
+          <p style={{ fontSize:13, color:'#1a1814', marginBottom:10 }}>
+            Connect your real Google Ads account to pull live spend, impressions, clicks and conversions —
+            no manual entry needed.
+          </p>
+          <button onClick={handleConnect} disabled={connecting}
+            style={{ background:'#4285f4', color:'white', border:'none', borderRadius:10, padding:'10px 18px', fontSize:13, fontWeight:600, cursor:'pointer', opacity:connecting?0.6:1 }}>
+            {connecting ? 'Redirecting…' : '🔵 Connect with Google'}
+          </button>
+        </>
+      ) : !status.customer_id ? (
+        <>
+          <p style={{ fontSize:13, color:'#15803d', fontWeight:600, marginBottom:6 }}>✅ Connected to Google — one step left</p>
+          {status.accessible_customers?.length > 0 ? (
+            <>
+              <p style={{ fontSize:12, color:'#6b7280', marginBottom:8 }}>Select which Google Ads account to sync:</p>
+              <select className="input" value={customerId} onChange={e => setCustomerId(e.target.value)} style={{ marginBottom:10 }}>
+                <option value="">Choose an account…</option>
+                {status.accessible_customers.map(id => <option key={id} value={id}>{id}</option>)}
+              </select>
+            </>
+          ) : (
+            <>
+              <p style={{ fontSize:12, color:'#6b7280', marginBottom:8 }}>
+                Enter your Google Ads Customer ID (found top-right when logged into ads.google.com):
+              </p>
+              <input className="input" placeholder="123-456-7890" value={customerId} onChange={e => setCustomerId(e.target.value)} style={{ marginBottom:10 }} />
+            </>
+          )}
+          <button onClick={handleSaveCustomerId} disabled={saving || !customerId}
+            style={{ background:'#1a1814', color:'white', border:'none', borderRadius:10, padding:'9px 16px', fontSize:13, fontWeight:600, cursor:'pointer', opacity:(saving||!customerId)?0.6:1 }}>
+            {saving ? 'Saving…' : 'Link account'}
+          </button>
+        </>
+      ) : (
+        <>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+            <p style={{ fontSize:13, color:'#15803d', fontWeight:600 }}>✅ Connected — Account {status.customer_id}</p>
+            <button onClick={handleDisconnect} style={{ background:'none', border:'none', color:'#dc2626', fontSize:12, cursor:'pointer' }}>Disconnect</button>
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:10 }}>
+            {[
+              ['Impressions', status.stats_30d?.impressions || 0],
+              ['Clicks',      status.stats_30d?.clicks || 0],
+              ['Spend',       inr(status.stats_30d?.cost)],
+              ['Conversions', status.stats_30d?.conversions || 0],
+            ].map(([k,v]) => (
+              <div key={k} style={{ background:'white', borderRadius:8, padding:10, textAlign:'center' }}>
+                <p style={{ fontSize:16, fontWeight:700, color:'#1a1814' }}>{v}</p>
+                <p style={{ fontSize:10, color:'#9ca3af' }}>{k} (30d)</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Budget — read-only, EnrollIQ can never add funds, only report what Google has */}
+          <div style={{ background:'white', borderRadius:10, padding:12 }}>
+            <p style={{ fontSize:11, fontWeight:600, color:'#6b7280', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.03em' }}>
+              Account budget {status.budget_is_postpaid ? '(postpaid billing)' : ''}
+            </p>
+            {status.budget_is_postpaid || status.budget_limit == null ? (
+              <p style={{ fontSize:13, color:'#374151' }}>
+                This account bills monthly rather than using a prepaid limit — showing <b>amount spent</b> instead of a remaining balance.
+                <br/><span style={{ fontSize:18, fontWeight:700, color:'#1a1814' }}>{inr(status.budget_spent)}</span> spent this billing period.
+                <br/><span style={{ fontSize:11, color:'#9ca3af' }}>To add or change payment methods, this has to be done directly in Google Ads — EnrollIQ can only display this, never move funds.</span>
+              </p>
+            ) : (
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
+                <div>
+                  <p style={{ fontSize:16, fontWeight:700, color:'#1a1814' }}>{inr(status.budget_limit)}</p>
+                  <p style={{ fontSize:10, color:'#9ca3af' }}>Total budget</p>
+                </div>
+                <div>
+                  <p style={{ fontSize:16, fontWeight:700, color:'#dc2626' }}>{inr(status.budget_spent)}</p>
+                  <p style={{ fontSize:10, color:'#9ca3af' }}>Spent</p>
+                </div>
+                <div>
+                  <p style={{ fontSize:16, fontWeight:700, color:'#15803d' }}>{inr(budgetRemaining)}</p>
+                  <p style={{ fontSize:10, color:'#9ca3af' }}>Remaining</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <p style={{ fontSize:11, color:'#9ca3af', marginTop:10 }}>
+            {status.last_synced_at ? `Last synced: ${new Date(status.last_synced_at).toLocaleString()}` : 'Not synced yet — first sync runs automatically within a few hours.'}
+            {status.last_error && <span style={{ color:'#dc2626', display:'block', marginTop:4 }}>⚠️ Last sync error: {status.last_error}</span>}
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
 function PlatformCard({ platform, saved, onSave, schoolSlug }) {
   const [open,   setOpen]   = useState(false)
   const [form,   setForm]   = useState({})
@@ -193,6 +351,8 @@ function PlatformCard({ platform, saved, onSave, schoolSlug }) {
             {/* Setup tab */}
             {tab === 'setup' && (
               <>
+                {platform.id === 'google_ads' && <GoogleAdsConnect />}
+
                 {/* Landing URL */}
                 {platform.landing_url && (
                   <div style={{ background:'#fdf0ea', borderRadius:12, padding:14, marginBottom:16 }}>
