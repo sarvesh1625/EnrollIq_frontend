@@ -10,6 +10,8 @@ const ROLE_META = {
   accountant:        { label:'Accountant',     color:'#d97706', bg:'#fffbeb', desc:'Fees · Analytics'              },
   receptionist:      { label:'Receptionist',   color:'#db2777', bg:'#fdf2f8', desc:'Leads · Admissions'            },
   transport_manager: { label:'Transport Mgr',  color:'#0891b2', bg:'#f0f9ff', desc:'Transport module only'         },
+  // Chairman is deliberately NOT offered here — it sees every branch in the group,
+  // so it can only be granted from the Super Admin panel, never by a branch admin.
 }
 const PERMS = {
   admin:             ['leads','students','fees','transport','attendance','exams','communication','analytics','import','roles'],

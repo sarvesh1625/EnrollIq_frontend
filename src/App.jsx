@@ -33,6 +33,9 @@ import LiveTracking from "./pages/Livetracking";
 import Cameras from './pages/Cameras'
 import AcademicYear from "./pages/Academicyear";
 import DailyUpdates from "./pages/DailyUpdates";
+import Posters from './pages/Posters'
+import GroupDashboard from './pages/GroupDashboard'
+
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -86,6 +89,8 @@ export default function App() {
         <Route path="/accountant-dashboard"      element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
         <Route path="/receptionist-dashboard"    element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
         <Route path="/transport-dashboard"       element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
+        <Route path="/posters" element={<PrivateRoute><Posters /></PrivateRoute>} />
+        <Route path="/group-dashboard" element={<PrivateRoute><GroupDashboard /></PrivateRoute>} />
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

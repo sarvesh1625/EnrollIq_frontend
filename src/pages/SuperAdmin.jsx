@@ -10,6 +10,10 @@ const saApi = {
   updateSchool: (id,d,tok)=>api.patch(`/superadmin/school/${id}`,d,{ headers:{ Authorization:`Bearer ${tok}` } }),
   impersonate:  (id,tok) => api.post(`/superadmin/impersonate/${id}`,{},{ headers:{ Authorization:`Bearer ${tok}` } }),
   resetPass:    (uid,pw,tok)=>api.post(`/superadmin/reset-password/${uid}`,{new_password:pw},{ headers:{ Authorization:`Bearer ${tok}` } }),
+  getChairmen:  (schoolId,tok) => api.get(`/superadmin/schools/${schoolId}/chairmen`, { headers:{ Authorization:`Bearer ${tok}` } }),
+  addChairman:  (schoolId,d,tok) => api.post(`/superadmin/schools/${schoolId}/chairmen`, d, { headers:{ Authorization:`Bearer ${tok}` } }),
+  setChairmanActive: (id,active,tok) => api.patch(`/superadmin/chairmen/${id}`, { is_active: active }, { headers:{ Authorization:`Bearer ${tok}` } }),
+  removeChairman: (id,tok) => api.delete(`/superadmin/chairmen/${id}`, { headers:{ Authorization:`Bearer ${tok}` } }),
   getSupport:   (tok,status) => api.get('/support/admin/messages'+(status?`?status=${status}`:''), { headers:{ Authorization:`Bearer ${tok}` } }),
   getSupportThread: (id,tok) => api.get(`/support/admin/${id}/messages`, { headers:{ Authorization:`Bearer ${tok}` } }),
   replySupport: (id,message,tok) => api.post(`/support/admin/${id}/messages`, { message }, { headers:{ Authorization:`Bearer ${tok}` } }),
@@ -256,6 +260,12 @@ function SchoolDrawer({ school, token, onClose, onUpdated }) {
   const [toast,  setToast]  = useState('')
   const [showReset, setShowReset] = useState(null)
   const [newPass,   setNewPass]   = useState('')
+  const [chairmen,  setChairmen]  = useState([])
+  const [chairLoading, setChairLoading] = useState(true)
+  const [showAddChairman, setShowAddChairman] = useState(false)
+  const [chForm, setChForm] = useState({ name:'', email:'', password:'' })
+  const [chBusy, setChBusy] = useState(false)
+  const [chError, setChError] = useState('')
 
   useEffect(() => {
     saApi.getSchool(school.id, token)
@@ -263,6 +273,38 @@ function SchoolDrawer({ school, token, onClose, onUpdated }) {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [school.id])
+
+  const loadChairmen = () => {
+    setChairLoading(true)
+    saApi.getChairmen(school.id, token).then(r => setChairmen(r.data || [])).catch(() => {}).finally(() => setChairLoading(false))
+  }
+  useEffect(() => { if (tab === 'chairman') loadChairmen() }, [tab])
+
+  const handleAddChairman = async () => {
+    if (!chForm.name.trim() || !chForm.email.trim() || chForm.password.length < 6) {
+      setChError('Name, email and a password of at least 6 characters are required.'); return
+    }
+    setChBusy(true); setChError('')
+    try {
+      await saApi.addChairman(school.id, chForm, token)
+      setChForm({ name:'', email:'', password:'' }); setShowAddChairman(false)
+      showToast('Chairman account created')
+      loadChairmen()
+    } catch (err) { setChError(err.response?.data?.message || 'Could not create the account') }
+    finally { setChBusy(false) }
+  }
+
+  const toggleChairmanActive = async (c) => {
+    await saApi.setChairmanActive(c.id, !c.is_active, token)
+    loadChairmen()
+  }
+
+  const removeChairman = async (c) => {
+    if (!confirm(`Remove chairman access for ${c.name}? This cannot be undone.`)) return
+    await saApi.removeChairman(c.id, token)
+    showToast('Chairman account removed')
+    loadChairmen()
+  }
 
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
@@ -326,8 +368,8 @@ function SchoolDrawer({ school, token, onClose, onUpdated }) {
                   {school.status || 'Active'}
                 </span>
                 <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:12,
-                  background:(PLAN_STYLE[school.subscription_plan]||PLAN_STYLE.Basic).bg,
-                  color:(PLAN_STYLE[school.subscription_plan]||PLAN_STYLE.Basic).text }}>
+                  background:(PLAN_STYLE[(school.subscription_plan||'basic').toLowerCase()]||PLAN_STYLE.basic).bg,
+                  color:(PLAN_STYLE[(school.subscription_plan||'basic').toLowerCase()]||PLAN_STYLE.basic).text }}>
                   {school.subscription_plan || 'Basic'}
                 </span>
               </div>
@@ -350,7 +392,7 @@ function SchoolDrawer({ school, token, onClose, onUpdated }) {
 
         {/* Tabs */}
         <div className="flex gap-1 p-3 border-b border-gray-100 flex-shrink-0">
-          {['overview','plan','staff'].map(t => (
+          {['overview','plan','staff','chairman'].map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={'text-xs px-3 py-1.5 rounded-md transition-colors font-medium capitalize flex-1 ' +
                 (tab===t ? 'bg-ink text-white' : 'text-gray-500 hover:bg-cream')}>
@@ -463,6 +505,61 @@ function SchoolDrawer({ school, token, onClose, onUpdated }) {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {tab === 'chairman' && (
+                <div className="flex flex-col gap-3">
+                  <div className="bg-amber-50 text-amber-800 text-xs rounded-lg p-3">
+                    A chairman sees every branch in this school's group at once (Group Dashboard) —
+                    this is the only place that account type can be created, edited, or removed.
+                  </div>
+
+                  {chairLoading ? (
+                    <p className="text-xs text-gray-400">Loading…</p>
+                  ) : chairmen.length === 0 ? (
+                    <p className="text-xs text-gray-400">No chairman account yet for this group.</p>
+                  ) : (
+                    chairmen.map(c => (
+                      <div key={c.id} className="card !p-4 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-amber-50 flex items-center justify-center text-sm font-bold text-amber-700 flex-shrink-0">
+                          {c.name[0]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-ink truncate">{c.name}</p>
+                          <p className="text-xs text-gray-400 truncate">{c.email} · home branch: {c.home_branch}</p>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded flex-shrink-0 ${c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                          {c.is_active ? 'Active' : 'Disabled'}
+                        </span>
+                        <button onClick={() => toggleChairmanActive(c)} className="text-xs text-brand-600 hover:underline flex-shrink-0">
+                          {c.is_active ? 'Disable' : 'Enable'}
+                        </button>
+                        <button onClick={() => removeChairman(c)} className="text-xs text-red-500 hover:underline flex-shrink-0">Remove</button>
+                      </div>
+                    ))
+                  )}
+
+                  {showAddChairman ? (
+                    <div className="card !p-4 flex flex-col gap-2">
+                      {chError && <p className="text-xs text-red-600">{chError}</p>}
+                      <input className="input text-sm" placeholder="Full name" value={chForm.name}
+                        onChange={e => setChForm(f => ({ ...f, name: e.target.value }))} />
+                      <input className="input text-sm" type="email" placeholder="Email" value={chForm.email}
+                        onChange={e => setChForm(f => ({ ...f, email: e.target.value }))} />
+                      <input className="input text-sm" type="password" placeholder="Password (min 6 characters)" value={chForm.password}
+                        onChange={e => setChForm(f => ({ ...f, password: e.target.value }))} />
+                      <div className="flex gap-2">
+                        <button onClick={handleAddChairman} disabled={chBusy}
+                          className="text-xs bg-ink text-white px-3 py-1.5 rounded-lg flex-1" style={{ opacity: chBusy ? 0.6 : 1 }}>
+                          {chBusy ? 'Creating…' : 'Create chairman account'}
+                        </button>
+                        <button onClick={() => { setShowAddChairman(false); setChError('') }} className="text-xs text-gray-400 px-2">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setShowAddChairman(true)} className="btn-ghost text-sm">+ Add chairman account</button>
+                  )}
                 </div>
               )}
             </>

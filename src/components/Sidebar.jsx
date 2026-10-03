@@ -11,6 +11,7 @@ const ROLE_ALLOWED = {
   accountant:        ['/fees','/analytics'],
   receptionist:      ['/leads','/admissions'],
   transport_manager: ['/transport'],
+  chairman:          null, // full access, same as admin — plus the Group Dashboard as their home page
 }
 
 const ROLE_HOME = {
@@ -20,6 +21,7 @@ const ROLE_HOME = {
   accountant:        '/accountant-dashboard',
   receptionist:      '/receptionist-dashboard',
   transport_manager: '/transport-dashboard',
+  chairman:          '/group-dashboard',
 }
 
 const ROLE_META = {
@@ -29,6 +31,7 @@ const ROLE_META = {
   accountant:        { label:'Accountant',     color:'#d97706', bg:'#fffbeb' },
   receptionist:      { label:'Receptionist',   color:'#db2777', bg:'#fdf2f8' },
   transport_manager: { label:'Transport Mgr',  color:'#0891b2', bg:'#f0f9ff' },
+  chairman:          { label:'Chairman',       color:'#b45309', bg:'#fffbeb' },
 }
 
 const NAV = [
@@ -39,10 +42,12 @@ const NAV = [
   { to:'/admissions',     icon:'✦',  label:'Admissions'    },
   { to:'/students',       icon:'◉',  label:'Students'      },
     { to:'/kit',       icon:'🎒',  label:'School Kit'      },
+    { to:'/support',   icon:'💬',  label:'Support'         },
   { section: 'Academic' },
   { to:'/attendance',     icon:'✓',  label:'Attendance'    },
   { to:'/exams',          icon:'✎',  label:'Exams'         },
   { to:'/daily-updates',  icon:'📔', label:'Daily Updates', feature:'daily_diary' },
+  { to:'/posters',        icon:'🎉', label:'Posters'       },
   { section: 'Finance & Ops' },
   { to:'/fees',           icon:'◎',  label:'Fees'          },
   { to:'/transport',      icon:'⬡',  label:'Transport'     },
@@ -57,8 +62,7 @@ const NAV = [
   { to:'/settings',       icon:'⚙',  label:'Settings'      },
   { to:'/tracking', icon:'🛰️', label:'Live Tracking' },
 { to:'/cameras',  icon:'📹', label:'Cameras' },
-{ to:'/academic', icon:'🎓', label:'Academic Year' },
-{ to:'/support',   icon:'💬',  label:'Support'         },
+{ to:'/academic', icon:'🎓', label:'Academic Year' }
 ]
 
 export default function Sidebar({ onClose, mobile }) {
@@ -112,7 +116,8 @@ export default function Sidebar({ onClose, mobile }) {
       </div>
 
       {/* Branch switcher (enterprise multi-branch; shows only if 2+ branches) */}
-      {role === 'admin' && <BranchSwitcher variant="sidebar" />}
+      {/* Only chairman switches branches from here — a branch admin never gets this control */}
+      {role === 'chairman' && <BranchSwitcher variant="sidebar" />}
 
       {/* Nav */}
       <nav className="sb-nav">
@@ -127,10 +132,11 @@ export default function Sidebar({ onClose, mobile }) {
           if (item.section) {
             // Only show section header if admin or has items in this section
             const hasItems = NAV.slice(i+1).some(n => n.to && canSee(n.to) && !n.section)
-            if (!hasItems || (role !== 'admin' && item.section === 'Growth' && !canSee('/analytics'))) return null
-            if (role !== 'admin' && !['Finance & Ops','Academic','Main'].includes(item.section) &&
+            const isAdminLike = ['admin','chairman'].includes(role)
+            if (!hasItems || (!isAdminLike && item.section === 'Growth' && !canSee('/analytics'))) return null
+            if (!isAdminLike && !['Finance & Ops','Academic','Main'].includes(item.section) &&
                 !NAV.slice(i+1, NAV.findIndex((n,j) => j > i && n.section)).some(n => n.to && canSee(n.to))) return null
-            return role === 'admin' ? (
+            return isAdminLike ? (
               <p key={i} className="sb-section-label">{item.section}</p>
             ) : null
           }
@@ -149,13 +155,13 @@ export default function Sidebar({ onClose, mobile }) {
 
       {/* Footer */}
       <div className="sb-footer">
-        {/* {role === 'admin' && (
+        {role === 'admin' && (
           <a href="/discover" target="_blank" rel="noreferrer" onClick={go}
             className="sb-link" style={{ color:'var(--c-brand)', marginBottom:2 }}>
             <span className="icon">🔍</span>
             Discovery
           </a>
-        )} */}
+        )}
         <button onClick={handleLogout} className="sb-link"
           style={{ color:'var(--c-muted)' }}
           onMouseEnter={e => { e.currentTarget.style.background='var(--c-red-lt)'; e.currentTarget.style.color='var(--c-red)' }}
