@@ -27,6 +27,7 @@ export default function Login() {
         accountant:        '/accountant-dashboard',
         receptionist:      '/receptionist-dashboard',
         transport_manager: '/transport-dashboard',
+        chairman:          '/group-dashboard',
       }
       navigate(roleRedirect[res.data.user?.role] || '/dashboard', { replace: true })
     } catch (err) {
