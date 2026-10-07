@@ -241,12 +241,12 @@ function GoogleAdsConnect() {
           {/* Budget — read-only, EnrollIQ can never add funds, only report what Google has */}
           <div style={{ background:'white', borderRadius:10, padding:12 }}>
             <p style={{ fontSize:11, fontWeight:600, color:'#6b7280', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.03em' }}>
-              Account budget {status.budget_is_postpaid ? '(postpaid billing)' : ''}
+              Account budget {status.budget_is_postpaid ? '(billing)' : ''}
             </p>
-            {status.budget_is_postpaid || status.budget_limit == null ? (
+            {status.budget_is_postpaid || !(status.budget_limit > 0) ? (
               <p style={{ fontSize:13, color:'#374151' }}>
-                This account bills monthly rather than using a prepaid limit — showing <b>amount spent</b> instead of a remaining balance.
-                <br/><span style={{ fontSize:18, fontWeight:700, color:'#1a1814' }}>{inr(status.budget_spent)}</span> spent this billing period.
+                Google doesn't share the remaining balance for this account (common for prepaid / manual-payment accounts), so EnrollIQ doesn't guess one.
+                <br/>Check your balance in Google Ads → Billing → Summary. Spend EnrollIQ has synced is shown in the stats above.
                 <br/><span style={{ fontSize:11, color:'#9ca3af' }}>To add or change payment methods, this has to be done directly in Google Ads — EnrollIQ can only display this, never move funds.</span>
               </p>
             ) : (
