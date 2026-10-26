@@ -29,6 +29,60 @@ function fmtRupee(n) {
   return `₹${n}`
 }
 
+// ── Parent-app fee reminders: preview, then send ─────────────────────────────
+function RemindersModal({ onClose, onSent }) {
+  const [preview, setPreview] = useState(null)
+  const [error,   setError]   = useState('')
+  const [sending, setSending] = useState(false)
+  useEffect(() => {
+    api.post('/fees/reminders/run', { dry_run: true })
+      .then(r => setPreview(r.data))
+      .catch(e => setError(e.response?.data?.message || 'Could not check reminders'))
+  }, [])
+  const send = async () => {
+    setSending(true); setError('')
+    try { const r = await api.post('/fees/reminders/run', { dry_run: false }); onSent(`${r.data.notifications} reminder(s) sent to parents`) }
+    catch (e) { setError(e.response?.data?.message || 'Could not send reminders'); setSending(false) }
+  }
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-gray-100 flex justify-between items-center">
+          <h2 className="font-serif text-xl font-bold text-ink">Fee reminders</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-ink text-xl">×</button>
+        </div>
+        <div className="p-5">
+          <p className="text-xs text-gray-400 mb-3">
+            Reminders go to the parent app automatically every day (3 days before the due date, on the due date, then weekly while overdue).
+            You can also send today's batch now. Nobody gets the same reminder twice in a day.
+          </p>
+          {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg mb-3">{error}</div>}
+          {!preview && !error && <p className="text-sm text-gray-400">Checking...</p>}
+          {preview && preview.notifications === 0 && <p className="text-sm text-ink">Nothing to send right now.</p>}
+          {preview && preview.notifications > 0 && (
+            <div style={{ maxHeight:260, overflowY:'auto' }} className="flex flex-col gap-2 mb-4">
+              <p className="text-sm font-medium text-ink">{preview.notifications} reminder(s) ready:</p>
+              {preview.preview.map((p, i) => (
+                <div key={i} className="border border-gray-100 rounded-lg p-3">
+                  <p className="text-sm font-medium text-ink">{p.title}</p>
+                  <p className="text-xs text-gray-500">{p.body}</p>
+                </div>
+              ))}
+              {preview.notifications > preview.preview.length && <p className="text-xs text-gray-400">...and {preview.notifications - preview.preview.length} more</p>}
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <button className="btn-ghost" onClick={onClose}>Close</button>
+            <button className="btn-primary" disabled={!preview || preview.notifications === 0 || sending} onClick={send}>
+              {sending ? 'Sending...' : 'Send now'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Create Invoice Modal ──────────────────────────────────────────────────────
 function CreateInvoiceModal({ students, onClose, onSaved }) {
   const [form, setForm] = useState({ student_id:'', fee_type:'Tuition Fee', amount:'', due_date:'', payment_mode:'' })
@@ -256,6 +310,7 @@ export default function Fees() {
   const [classFilter, setClassFilter]  = useState('All')
   const [search,     setSearch]    = useState('')
   const [toast,      setToast]     = useState('')
+  const [showReminders, setShowReminders] = useState(false)
   const [showCreate,    setShowCreate]    = useState(false)
   const [showRecord,    setShowRecord]    = useState(null)
   const [showStructure, setShowStructure] = useState(false)
@@ -302,6 +357,7 @@ export default function Fees() {
             <p style={{ color:'var(--c-muted)', fontSize:13, margin:'6px 0 0' }}>Track payments, dues and overdue accounts</p>
           </div>
           <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+            <button className="btn-ghost" onClick={() => setShowReminders(true)}>🔔 Reminders</button>
             <button className="btn-ghost" onClick={() => setShowStructure(true)}>⚙ Fee structure</button>
             <button className="btn-primary" onClick={() => setShowCreate(true)}>+ Create invoice</button>
           </div>
@@ -455,6 +511,7 @@ export default function Fees() {
       {showCreate    && <CreateInvoiceModal students={students} onClose={() => setShowCreate(false)} onSaved={handleSaved} />}
       {showRecord    && <RecordPaymentModal payment={showRecord} onClose={() => setShowRecord(null)} onSaved={handleSaved} />}
       {showStructure && <FeeStructureModal onClose={() => setShowStructure(false)} onSaved={handleSaved} />}
+      {showReminders && <RemindersModal onClose={() => setShowReminders(false)} onSent={msg => { setShowReminders(false); showToast(msg) }} />}
 
       <style>{`
         @media (max-width: 768px) {

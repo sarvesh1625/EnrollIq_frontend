@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../api/axios'
+import DataTools from './SuperAdminDataTools'
 
 const saApi = {
   login:        (d)      => api.post('/superadmin/login', d),
@@ -740,6 +741,7 @@ function SuperDashboard({ token, admin, onLogout }) {
           {[
             { key:'dashboard', icon:'▦', label:'Dashboard' },
             { key:'schools',   icon:'🏫', label:'Schools'   },
+            { key:'data',      icon:'⇅',  label:'Data tools' },
             { key:'support',   icon:'💬', label:'Support'+(support.counts?.new_count ? ` (${support.counts.new_count})` : '') },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
@@ -882,6 +884,8 @@ function SuperDashboard({ token, admin, onLogout }) {
           )}
 
           {/* Support */}
+          {tab === 'data' && <DataTools token={token} schools={schools} showToast={showToast} />}
+
           {tab === 'support' && (
             <>
               <div className="mb-6 flex justify-between items-end flex-wrap gap-3">

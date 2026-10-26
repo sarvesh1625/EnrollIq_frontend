@@ -112,6 +112,7 @@ export default function AcademicYear() {
   const [plan, setPlan]       = useState({})     // student_id -> { action, to_class }
   const [running, setRunning] = useState(false)
   const [showYear, setShowYear] = useState(false)
+  const [shown, setShown] = useState(100)    // only draw this many rows — thousands of rows with dropdowns freeze the browser
   const [toast, setToast]     = useState('')
   const showToast = (m) => { setToast(m); setTimeout(() => setToast(''), 3000) }
 
@@ -150,10 +151,11 @@ export default function AcademicYear() {
     })
     setPlan(p)
     setSel(Object.fromEntries(rows.map(r => [r.student_id, true])))
+    setShown(100)
   }, [rows])
 
   const setAction = (sid, action) => setPlan(p => {
-    const row = rows.find(r => r.student_id === sid)
+    const row = rowById.get(sid)
     const to_class = action === 'Detained' ? row.class
                    : action === 'Promoted' ? (row.suggested_class || nextClass(row.class))
                    : null
@@ -161,6 +163,7 @@ export default function AcademicYear() {
   })
   const setToClass = (sid, to_class) => setPlan(p => ({ ...p, [sid]: { ...p[sid], to_class } }))
 
+  const rowById = useMemo(() => new Map(rows.map(r => [r.student_id, r])), [rows])   // O(1) lookups (was a slow rows.find per student)
   const selectedIds = Object.keys(sel).filter(k => sel[k]).map(Number)
   const summary = useMemo(() => {
     const c = {}
@@ -182,7 +185,7 @@ export default function AcademicYear() {
       from_year_id: Number(fromYear),
       to_year_id: Number(toYear),
       students: selectedIds.map(id => {
-        const row = rows.find(r => r.student_id === id)
+        const row = rowById.get(id)
         return {
           student_id: id,
           action: plan[id]?.action || 'Promoted',
@@ -313,7 +316,7 @@ export default function AcademicYear() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {rows.map(r => {
+                      {rows.slice(0, shown).map(r => {
                         const p = plan[r.student_id] || {}
                         const on = !!sel[r.student_id]
                         return (
@@ -364,6 +367,15 @@ export default function AcademicYear() {
                       })}
                     </tbody>
                   </table>
+                  {rows.length > shown && (
+                    <div style={{ padding:'12px 20px', textAlign:'center', borderTop:'1px solid var(--c-border)' }}>
+                      <p className="text-xs text-gray-400" style={{ marginBottom:8 }}>
+                        Showing {shown.toLocaleString()} of {rows.length.toLocaleString()} students. Everything below is still included when you press Promote.
+                      </p>
+                      <button className="btn-ghost text-xs" onClick={() => setShown(n => n + 100)}>Show 100 more</button>
+                      <button className="btn-ghost text-xs" style={{ marginLeft:8 }} onClick={() => setShown(n => n + 500)}>Show 500 more</button>
+                    </div>
+                  )}
                 </div>
               )}
 

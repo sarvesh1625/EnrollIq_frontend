@@ -84,6 +84,11 @@ function AddBusModal({ initial, onClose, onSaved }) {
           <label className="label">Capacity (seats)</label>
           <input className="input" type="number" value={form.capacity} onChange={set('capacity')} min={1} max={100} />
         </div>
+        <div>
+          <label className="label">GPS tracker IMEI</label>
+          <input className="input" value={form.gps_device_id || ''} onChange={e => setForm(p => ({ ...p, gps_device_id: e.target.value.replace(/\D/g, '').slice(0, 20) }))} placeholder="15-digit number from the tracker company" inputMode="numeric" />
+          <p className="text-xs text-gray-400 mt-1">Optional. Once saved, this bus appears on the live map automatically when the tracker sends its position.</p>
+        </div>
         <div className="flex gap-3 pt-2">
           <button type="submit" disabled={saving} className="btn-primary flex-1 justify-center disabled:opacity-60">
             {saving ? 'Saving...' : isEdit ? 'Update Bus' : 'Add Bus'}
@@ -625,6 +630,9 @@ loadEnrolled()
                       </div>
                       <div className="flex justify-between">
                         <span>Capacity</span><span className="font-medium text-ink">{bus.capacity} seats</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>GPS tracker</span><span className="font-medium text-ink">{bus.gps_device_id || 'Not linked'}</span>
                       </div>
                     </div>
                     <div className="mt-3 pt-3 border-t border-gray-50 flex items-center justify-between">

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import Layout from '../components/Layout'
 import AIScoreBadge from '../components/AIScoreBadge'
-import { getLeads } from '../api/leads'
+import { getLeads, getCounsellors, assignLead } from '../api/leads'
+import { useAuth } from '../context/AuthContext'
 
 const STATUS_FILTERS = ['All','New','Contacted','Campus Visit','Admission','Lost']
 const LABEL_FILTERS  = ['All','Hot','Warm','Cold']
@@ -24,6 +25,19 @@ function timeAgo(iso) {
 
 export default function Leads() {
   const navigate = useNavigate()
+  const [sp] = useSearchParams()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
+  const [opts, setOpts] = useState(null)
+  useEffect(() => { if (isAdmin) getCounsellors().then(r => setOpts(r.data)).catch(() => {}) }, [isAdmin])
+  const changeCounsellor = async (lead, value) => {
+    const userId = value ? parseInt(value) : null
+    try {
+      const r = await assignLead(lead.id, { user_id: userId })
+      setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, assigned_to: r.data.assigned_to, assigned_name: r.data.assigned_name } : l))
+    } catch (e) { setError(e.response?.data?.message || 'Could not change counsellor') }
+  }
+  const [assignFilter, setAssignFilter] = useState(sp.get('assigned_to') || (user?.is_counsellor && user?.role !== 'admin' ? 'me' : 'all'))
   const [leads,   setLeads]   = useState([])
   const [total,   setTotal]   = useState(0)
   const [loading, setLoading] = useState(true)
@@ -39,6 +53,7 @@ export default function Leads() {
       if (statusFilter !== 'All') params.status   = statusFilter
       if (labelFilter  !== 'All') params.ai_label = labelFilter
       if (search.trim())          params.search   = search.trim()
+      if (assignFilter !== 'all') params.assigned_to = assignFilter
       const res = await getLeads(params)
       setLeads(res.data.leads || [])
       setTotal(res.data.total || 0)
@@ -50,7 +65,7 @@ export default function Leads() {
     }
   }
 
-  useEffect(() => { load() }, [statusFilter, labelFilter])
+  useEffect(() => { load() }, [statusFilter, labelFilter, assignFilter])
   useEffect(() => {
     const t = setTimeout(load, 450)
     return () => clearTimeout(t)
@@ -99,7 +114,16 @@ export default function Leads() {
                   background: labelFilter === l ? 'var(--c-ink)' : 'transparent',
                   color: labelFilter === l ? 'white' : 'var(--c-ink-2)' }}>
                 {l}
-  []            </button>
+                </button>
+            ))}
+          </div>
+
+          <div style={{ display:'flex', gap:3, background:'white', border:'1px solid var(--c-border-2)', borderRadius:8, padding:3 }}>
+            {[['all','Everyone'],['me','Mine'],['unassigned','Unassigned']].map(([v,l]) => (
+              <button key={v} onClick={() => setAssignFilter(v)}
+                style={{ fontSize:11, fontWeight:500, padding:'5px 10px', borderRadius:6, border:'none', cursor:'pointer',
+                  background: assignFilter === v ? 'var(--c-ink)' : 'transparent',
+                  color: assignFilter === v ? 'white' : 'var(--c-ink-2)' }}>{l}</button>
             ))}
           </div>
         </div>
@@ -146,6 +170,24 @@ export default function Leads() {
                       </div>
                       <div style={{ minWidth:0 }}>
                         <p style={{ fontSize:13, fontWeight:600, color:'var(--c-ink)', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{lead.parent_name}</p>
+                        {isAdmin && opts ? (
+                          <select value={lead.assigned_to || ''} onClick={e => e.stopPropagation()}
+                            onChange={e => changeCounsellor(lead, e.target.value)}
+                            style={{ fontSize:11, margin:'3px 0 0', padding:'2px 4px', maxWidth:170, border:'1px solid var(--c-border-2)', borderRadius:6, background:'white',
+                              color: lead.assigned_to ? 'var(--c-ink-2)' : 'var(--c-amber)' }}>
+                            <option value="">Unassigned</option>
+                            <optgroup label="Counsellors">
+                              {opts.counsellors.map(c => <option key={c.id} value={c.id}>{c.name}{c.available ? '' : ' (paused)'}</option>)}
+                            </optgroup>
+                            <optgroup label="Other staff">
+                              {opts.people.filter(p => !opts.counsellors.some(c => c.id === p.id)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </optgroup>
+                          </select>
+                        ) : (
+                          <p style={{ fontSize:11, color: lead.assigned_name ? 'var(--c-muted)' : 'var(--c-amber)', margin:'2px 0 0' }}>
+                            {lead.assigned_name ? `Counsellor: ${lead.assigned_name}` : 'Unassigned'}
+                          </p>
+                        )}
                         {/* On mobile, show phone + grade here under the name */}
                         <p className="show-md-only" style={{ fontSize:11, color:'var(--c-muted)', margin:'2px 0 0', display:'none' }}>
                           {lead.phone} · {lead.child_grade}

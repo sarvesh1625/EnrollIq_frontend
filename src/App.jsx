@@ -24,18 +24,15 @@ import Analytics      from './pages/Analytics'
 import BulkImport     from './pages/BulkImport'
 import RoleManagement from './pages/RoleManagement'
 import Settings       from './pages/Settings'
+import Counsellors    from './pages/Counsellors'
 import SchoolProfile  from './pages/SchoolProfile'
 import AdsManagement  from './pages/AdsManagement'
 import RoleDashboard from './pages/RoleDashboard'
 import SchoolKit from './pages/Schoolkit'
-import Support from './pages/Support'
 import LiveTracking from "./pages/Livetracking";
 import Cameras from './pages/Cameras'
 import AcademicYear from "./pages/Academicyear";
 import DailyUpdates from "./pages/DailyUpdates";
-import Posters from './pages/Posters'
-import GroupDashboard from './pages/GroupDashboard'
-
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -82,6 +79,7 @@ export default function App() {
         <Route path="/import"        element={<PrivateRoute><BulkImport /></PrivateRoute>} />
         <Route path="/roles"         element={<PrivateRoute><RoleManagement /></PrivateRoute>} />
         <Route path="/settings"      element={<PrivateRoute><Settings /></PrivateRoute>} />
+        <Route path="/counsellors"   element={<PrivateRoute><Counsellors /></PrivateRoute>} />
         <Route path="/school-profile" element={<PrivateRoute><SchoolProfile /></PrivateRoute>} />
         <Route path="/ads"           element={<PrivateRoute><AdsManagement /></PrivateRoute>} />
         <Route path="/staff-dashboard"           element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
@@ -89,13 +87,10 @@ export default function App() {
         <Route path="/accountant-dashboard"      element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
         <Route path="/receptionist-dashboard"    element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
         <Route path="/transport-dashboard"       element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
-        <Route path="/posters" element={<PrivateRoute><Posters /></PrivateRoute>} />
-        <Route path="/group-dashboard" element={<PrivateRoute><GroupDashboard /></PrivateRoute>} />
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/kit" element={<SchoolKit />} />
-        <Route path="/support" element={<Support />} />
       </Routes>
     </BrowserRouter>
   )

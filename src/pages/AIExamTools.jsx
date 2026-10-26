@@ -23,11 +23,87 @@ const aiApi = {
   listPapers:        (examId) => api.get(`/ai-exams/papers/${examId}`),
   getPaperQuestions: (id)     => api.get(`/ai-exams/papers/${id}/questions`),
   approvePaper:      (id)     => api.put(`/ai-exams/papers/${id}/approve`),
-  uploadAnswerSheet: (formData) => api.post('/ai-exams/answer-sheets', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  uploadAnswerSheet: (formData) => api.post('/ai-exams/answer-sheets', formData, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 300000 }),
   listAnswerSheets:  (examId) => api.get(`/ai-exams/answer-sheets/${examId}`),
   approveSheet:      (id, marks_override) => api.post(`/ai-exams/answer-sheets/${id}/approve`, { marks_override }),
   allowRetake:       (id) => api.delete(`/ai-exams/answer-sheets/${id}`),
   getInsights:       (studentId, examId, refresh) => api.get(`/ai-exams/insights/${studentId}/${examId}`, { params: refresh ? { refresh: true } : {} }),
+}
+
+/* ─── Helpers: multi-page upload + printable question paper ─── */
+export const MAX_PAGES = 20
+
+// Shrink a phone photo (long side 1800px, JPEG) so 15-20 pages upload quickly and fit the AI's size limit.
+// If the browser can't decode the file, the original is sent unchanged.
+export async function compressImage(file) {
+  try {
+    if (!file.type || !file.type.startsWith('image/')) return file
+    const url = URL.createObjectURL(file)
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; setTimeout(() => rej(new Error('slow')), 8000); i.src = url })
+    const scale = Math.min(1, 1800 / Math.max(img.width, img.height))
+    if (scale === 1 && file.size < 900000 && file.type === 'image/jpeg') { URL.revokeObjectURL(url); return file }
+    const c = document.createElement('canvas')
+    c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale)
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height)
+    let blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82))
+    URL.revokeObjectURL(url)
+    if (!blob) return file
+    return new File([blob], (file.name || 'page').replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' })
+  } catch { return file }
+}
+
+const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]))
+
+// Clean A4 question paper. withAnswers=true gives the teacher's copy with the answer key.
+export function buildPaperHtml({ exam, paper, questions, withAnswers }) {
+  const total = questions.reduce((s, q) => s + Number(q.marks || 0), 0) || paper.total_marks || 0
+  const title = `${exam.name || 'Exam'} — ${paper.subject_name || 'Question Paper'}`
+  const qHtml = questions.map((q, i) => {
+    const opts = Array.isArray(q.options) && q.options.length
+      ? `<ol class="opts">${q.options.map(o => `<li>${escHtml(o)}</li>`).join('')}</ol>` : ''
+    const ans = withAnswers && q.correct_answer ? `<div class="ans"><b>Answer:</b> ${escHtml(q.correct_answer)}</div>` : ''
+    return `<div class="q"><div class="qrow"><span class="qn">${i + 1}.</span><span class="qt">${escHtml(q.question_text)}</span><span class="qm">[${escHtml(q.marks)}]</span></div>${opts}${ans}</div>`
+  }).join('')
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title + (withAnswers ? ' (Answer Key)' : ''))}</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #111; font-size: 13px; line-height: 1.5; margin: 0; }
+  h1 { font-size: 20px; text-align: center; margin: 0 0 2px; }
+  .sub { text-align: center; color: #444; margin-bottom: 4px; }
+  .tag { text-align: center; font-weight: 700; color: #b91c1c; margin: 2px 0 6px; letter-spacing: .5px; }
+  .meta { display: flex; justify-content: space-between; border-top: 1.5px solid #111; border-bottom: 1.5px solid #111; padding: 6px 0; margin: 8px 0 10px; font-weight: 600; }
+  .stu { display: flex; gap: 24px; margin-bottom: 12px; }
+  .stu span { flex: 1; border-bottom: 1px solid #555; padding-bottom: 2px; color: #555; }
+  .q { margin-bottom: 12px; break-inside: avoid; }
+  .qrow { display: flex; gap: 8px; align-items: flex-start; }
+  .qn { font-weight: 700; min-width: 22px; }
+  .qt { flex: 1; white-space: pre-wrap; }
+  .qm { font-weight: 600; white-space: nowrap; }
+  .opts { list-style: upper-alpha; margin: 4px 0 0 34px; padding-left: 16px; }
+  .opts li { margin: 1px 0; }
+  .ans { margin: 6px 0 0 30px; padding: 5px 8px; background: #ecfdf5; border-left: 3px solid #059669; white-space: pre-wrap; }
+</style></head><body>
+<h1>${escHtml(exam.name || 'Exam')}</h1>
+<div class="sub">${escHtml(paper.subject_name || '')}${exam.class_name && exam.class_name !== 'All' ? ' · ' + escHtml(exam.class_name) : ''}</div>
+${withAnswers ? '<div class="tag">ANSWER KEY — TEACHER COPY</div>' : ''}
+<div class="meta"><span>Maximum marks: ${escHtml(total)}</span><span>Time: ______________</span></div>
+${withAnswers ? '' : '<div class="stu"><span>Name:</span><span>Roll no:</span><span>Date:</span></div>'}
+${qHtml}
+</body></html>`
+}
+
+// Opens the browser's print window for the paper. In it choose "Save as PDF" as the printer.
+export function printPaper(args) {
+  const iframe = document.createElement('iframe')
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'
+  document.body.appendChild(iframe)
+  const doc = iframe.contentWindow.document
+  doc.open(); doc.write(buildPaperHtml(args)); doc.close()
+  setTimeout(() => {
+    try { iframe.contentWindow.focus(); iframe.contentWindow.print() } catch {}
+    setTimeout(() => iframe.remove(), 60000)
+  }, 300)
 }
 
 /* ─── 1. Generate question paper ─────────────────────────────── */
@@ -162,8 +238,8 @@ export function GeneratePaperModal({ exam, subjects, onClose, showToast }) {
 export function AnswerSheetUpload({ exam, students, subjects, onClose, showToast }) {
   const [studentId, setStudentId] = useState(students[0]?.id || '')
   const [subjectId, setSubjectId] = useState(subjects[0]?.id || '')
-  const [file, setFile] = useState(null)
-  const [preview, setPreview] = useState(null)
+  const [pages, setPages] = useState([])   // [{ id, file, preview }] in the order the student wrote them
+  const [preparing, setPreparing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [err, setErr] = useState('')
@@ -176,20 +252,29 @@ export function AnswerSheetUpload({ exam, students, subjects, onClose, showToast
   }
   useEffect(() => { loadSubmissions() }, [])
 
-  const handleFile = (e) => {
-    const f = e.target.files[0]
-    if (!f) return
-    setFile(f)
-    setPreview(URL.createObjectURL(f))
-    setResult(null)
+  const handleFiles = async (e) => {
+    const picked = Array.from(e.target.files || [])
+    e.target.value = ''                       // lets the same photo be chosen again
+    if (!picked.length) return
+    const room = MAX_PAGES - pages.length
+    if (room <= 0) { setErr(`You can add up to ${MAX_PAGES} pages.`); return }
+    setErr(picked.length > room ? `Only ${MAX_PAGES} pages are allowed — the first ${room} were added.` : '')
+    setPreparing(true)
+    try {
+      const prepared = await Promise.all(picked.slice(0, room).map(compressImage))
+      setPages(p => [...p, ...prepared.map((f, i) => ({ id: Date.now() + '-' + i + '-' + Math.random(), file: f, preview: URL.createObjectURL(f) }))])
+      setResult(null)
+    } finally { setPreparing(false) }
   }
+  const movePage = (i, d) => setPages(p => { const n = [...p]; const j = i + d; if (j < 0 || j >= n.length) return p; [n[i], n[j]] = [n[j], n[i]]; return n })
+  const removePage = (i) => setPages(p => p.filter((_, k) => k !== i))
 
   const grade = async () => {
-    if (!file || !studentId || !subjectId) { setErr('Pick a student, subject, and upload an image.'); return }
+    if (!pages.length || !studentId || !subjectId) { setErr('Pick a student, a subject, and add at least one page.'); return }
     setLoading(true); setErr('')
     try {
       const formData = new FormData()
-      formData.append('image', file)
+      pages.forEach(p => formData.append('images', p.file))
       formData.append('exam_id', exam.id)
       formData.append('student_id', studentId)
       formData.append('subject_id', subjectId)
@@ -249,7 +334,7 @@ export function AnswerSheetUpload({ exam, students, subjects, onClose, showToast
                       style={{ border:'1px solid var(--c-border)', borderRadius:10, padding:'10px 12px', cursor:'pointer', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div>
                         <p className="text-sm font-medium text-ink">{s.student_name} <span className="text-xs text-gray-400">({s.roll_number})</span></p>
-                        <p className="text-xs text-gray-500">{s.subject_name} · {s.image_path === 'typed' ? '⌨ Typed' : '📷 Photo'}</p>
+                        <p className="text-xs text-gray-500">{s.subject_name} · {s.image_path === 'typed' ? '⌨ Typed' : (/^\d+ pages$/.test(s.image_path || '') ? '📷 ' + s.image_path : '📷 Photo')}</p>
                       </div>
                       <div style={{ textAlign:'right' }}>
                         <p className="text-sm font-semibold text-ink">{s.ai_marks}/{s.max_marks}</p>
@@ -321,17 +406,43 @@ export function AnswerSheetUpload({ exam, students, subjects, onClose, showToast
           </div>
 
           {!result && (
-            <label className="block border-2 border-dashed rounded-xl p-8 text-center cursor-pointer" style={{ borderColor:'var(--c-border-2)' }}>
-              <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
-              {preview ? <img src={preview} alt="preview" style={{ maxHeight:180, margin:'0 auto', borderRadius:8 }} />
-                : <><span style={{ fontSize:32, display:'block', marginBottom:8 }}>📄</span>
-                    <p className="text-sm font-medium text-ink">Click to upload a photo of the answer sheet</p></>}
-            </label>
+            <>
+              <label className="block border-2 border-dashed rounded-xl p-6 text-center cursor-pointer" style={{ borderColor:'var(--c-border-2)' }}>
+                <input type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} disabled={preparing || loading} />
+                <span style={{ fontSize:30, display:'block', marginBottom:6 }}>📄</span>
+                <p className="text-sm font-medium text-ink">
+                  {preparing ? 'Preparing photos…' : pages.length ? `Add more pages (${pages.length}/${MAX_PAGES})` : 'Click to add photos of the answer sheet'}
+                </p>
+                <p className="text-xs text-gray-400" style={{ marginTop:4 }}>
+                  Select all pages at once or add them in batches. Up to {MAX_PAGES} pages, in the order the student wrote them.
+                </p>
+              </label>
+
+              {pages.length > 0 && (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(96px, 1fr))', gap:10, maxHeight:260, overflowY:'auto' }}>
+                  {pages.map((p, i) => (
+                    <div key={p.id} data-testid="page-thumb" style={{ border:'1px solid var(--c-border)', borderRadius:8, padding:4, position:'relative' }}>
+                      <img src={p.preview} alt={'Page ' + (i + 1)} style={{ width:'100%', height:84, objectFit:'cover', borderRadius:6 }} />
+                      <p className="text-xs font-medium text-ink" style={{ textAlign:'center', marginTop:2 }}>Page {i + 1}</p>
+                      <div style={{ display:'flex', justifyContent:'space-between' }}>
+                        <button type="button" title="Move earlier" aria-label={'Move page ' + (i + 1) + ' earlier'} disabled={i === 0} onClick={() => movePage(i, -1)}
+                          style={{ background:'none', border:'none', cursor:'pointer', opacity: i === 0 ? .3 : 1 }}>◀</button>
+                        <button type="button" title="Remove" aria-label={'Remove page ' + (i + 1)} onClick={() => removePage(i)}
+                          style={{ background:'none', border:'none', cursor:'pointer', color:'#dc2626' }}>🗑</button>
+                        <button type="button" title="Move later" aria-label={'Move page ' + (i + 1) + ' later'} disabled={i === pages.length - 1} onClick={() => movePage(i, 1)}
+                          style={{ background:'none', border:'none', cursor:'pointer', opacity: i === pages.length - 1 ? .3 : 1 }}>▶</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
-          {file && !result && (
-            <button className="btn-primary" onClick={grade} disabled={loading}>
-              {loading ? 'Reading & grading…' : '✨ Grade with AI'}
+          {pages.length > 0 && !result && (
+            <button className="btn-primary" onClick={grade} disabled={loading || preparing}>
+              {loading ? `Reading ${pages.length} page${pages.length > 1 ? 's' : ''} & grading… this can take 1–2 minutes`
+                       : `✨ Grade ${pages.length} page${pages.length > 1 ? 's' : ''} with AI`}
             </button>
           )}
 
@@ -422,7 +533,13 @@ export function ViewPaperModal({ exam, onClose }) {
               <div>
                 <p className="text-sm font-semibold text-ink">{selected.subject_name} · {selected.difficulty} · {selected.total_marks} marks</p>
               </div>
-              <p className="text-xs text-gray-400">Edit any question, then Save changes.</p>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                <button className="btn-ghost" style={{ fontSize:12 }} disabled={!questions.length}
+                  onClick={() => printPaper({ exam, paper: selected, questions, withAnswers: false })}>⬇ Download PDF</button>
+                <button className="btn-ghost" style={{ fontSize:12 }} disabled={!questions.length}
+                  onClick={() => printPaper({ exam, paper: selected, questions, withAnswers: true })}>⬇ PDF with answer key</button>
+              </div>
+              <p className="text-xs text-gray-400">In the window that opens, choose <b>Save as PDF</b> as the printer. Edit any question below, then Save changes.</p>
               <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:340, overflowY:'auto' }}>
                 {questions.map((q, i) => (
                   <div key={q.id || i} style={{ border:'1px solid var(--c-border)', borderRadius:8, padding:10 }}>

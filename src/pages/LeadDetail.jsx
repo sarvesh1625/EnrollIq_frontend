@@ -4,6 +4,8 @@ import Layout from '../components/Layout'
 import AIScoreBadge from '../components/AIScoreBadge'
 import { getLead, updateLeadStatus, updateLead } from '../api/leads'
 import api from '../api/axios'
+import { useAuth } from '../context/AuthContext'
+import { getCounsellors, assignLead, getAssignmentHistory } from '../api/leads'
 
 const STATUSES = ['New','Contacted','Campus Visit','Admission','Lost']
 const STATUS_STYLE = {
@@ -43,6 +45,68 @@ function ScoreBar({ label, value, max=20, color='bg-brand-500' }) {
   )
 }
 
+// Who handles this lead. Everyone sees the name; only admins can change it.
+function CounsellorCard({ lead, onChanged }) {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
+  const [opts, setOpts]       = useState(null)
+  const [history, setHistory] = useState([])
+  const [busy, setBusy]       = useState(false)
+  const [msg, setMsg]         = useState('')
+
+  useEffect(() => {
+    if (!isAdmin || !lead?.id || typeof lead.id !== 'number') return
+    getCounsellors().then(r => setOpts(r.data)).catch(() => {})
+    getAssignmentHistory(lead.id).then(r => setHistory(r.data)).catch(() => {})
+  }, [isAdmin, lead?.id, lead?.assigned_to])
+
+  const run = async (data) => {
+    setBusy(true); setMsg('')
+    try {
+      const r = await assignLead(lead.id, data)
+      onChanged({ assigned_to: r.data.assigned_to, assigned_name: r.data.assigned_name })
+      setMsg(r.data.assigned_name ? 'Assigned to ' + r.data.assigned_name : 'Unassigned')
+    } catch (e) { setMsg(e.response?.data?.message || 'Could not change counsellor') }
+    finally { setBusy(false) }
+  }
+
+  const counsellorIds = new Set((opts?.counsellors || []).map(c => c.id))
+  return (
+    <div className="card">
+      <h2 className="font-semibold text-ink text-sm mb-3">Counsellor</h2>
+      <p className="text-sm text-ink mb-3">{lead.assigned_name || 'Not assigned yet'}
+        {lead.assign_method && <span className="text-xs text-gray-400"> ({lead.assign_method === 'auto' ? 'auto-assigned' : 'assigned by admin'})</span>}
+      </p>
+      {isAdmin && opts && (
+        <div className="flex gap-2 flex-wrap items-center">
+          <select className="input" style={{ maxWidth:240 }} disabled={busy}
+            value={lead.assigned_to || ''} onChange={e => run({ user_id: e.target.value ? parseInt(e.target.value) : null })}>
+            <option value="">Unassigned</option>
+            <optgroup label="Counsellors">
+              {opts.counsellors.map(c => <option key={c.id} value={c.id}>{c.name}{c.available ? '' : ' (paused)'}</option>)}
+            </optgroup>
+            <optgroup label="Other staff">
+              {opts.people.filter(p => !counsellorIds.has(p.id)).map(p => <option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}
+            </optgroup>
+          </select>
+          <button className="btn-ghost" disabled={busy} onClick={() => run({ auto: true })}>Pick best counsellor</button>
+        </div>
+      )}
+      {msg && <p className="text-xs text-gray-500 mt-2">{msg}</p>}
+      {isAdmin && history.length > 0 && (
+        <div className="mt-3 border-t border-gray-100 pt-3">
+          <p className="text-xs text-gray-400 mb-1">History</p>
+          {history.slice(0, 5).map(h => (
+            <p key={h.id} className="text-xs text-gray-500">
+              {new Date(h.created_at).toLocaleDateString('en-IN')}: {h.from_name || 'Unassigned'} → {h.to_name || 'Unassigned'} ({h.method === 'auto' ? 'auto' : 'by ' + (h.by_name || 'admin')})
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function LeadDetail() {
   const { id }     = useParams()
   const navigate   = useNavigate()
@@ -59,11 +123,26 @@ export default function LeadDetail() {
       .finally(() => setLoading(false))
   }, [id])
 
-  const handleStatusChange = async (newStatus) => {
+  // Stage change needs a note: clicking a stage opens a note box, the move happens on Confirm
+  const [pendingStatus, setPendingStatus] = useState(null)
+  const [stageNote,     setStageNote]     = useState('')
+  const [stageError,    setStageError]    = useState('')
+  const [stageSaving,   setStageSaving]   = useState(false)
+
+  const askStatusChange = (newStatus) => {
+    if (newStatus === lead.status) return
+    setPendingStatus(newStatus); setStageNote(''); setStageError('')
+  }
+  const confirmStatusChange = async () => {
+    if (stageNote.trim().length < 3) { setStageError('Please write a short note before moving the stage'); return }
+    setStageSaving(true); setStageError('')
     try {
-      await updateLeadStatus(id, newStatus)
-      setLead(prev => ({ ...prev, status: newStatus }))
-    } catch { setLead(prev => ({ ...prev, status: newStatus })) }
+      await updateLeadStatus(id, pendingStatus, stageNote.trim())
+      const entry = { id: Date.now(), type: 'Status Change', notes: `${lead.status} \u2192 ${pendingStatus}: ${stageNote.trim()}`, created_at: new Date().toISOString() }
+      setLead(prev => ({ ...prev, status: pendingStatus, interactions: [...(prev.interactions || []), entry] }))
+      setPendingStatus(null)
+    } catch (e) { setStageError(e.response?.data?.message || 'Could not change the stage') }
+    finally { setStageSaving(false) }
   }
 
   const addNote = async () => {
@@ -138,12 +217,14 @@ export default function LeadDetail() {
               </div>
             </div>
 
+            <CounsellorCard lead={lead} onChanged={patch => setLead(prev => ({ ...prev, ...patch, assign_method: 'manual' }))} />
+
             {/* Status pipeline */}
             <div className="card">
               <h2 className="font-semibold text-ink text-sm mb-4">Pipeline status</h2>
               <div className="flex gap-2 flex-wrap">
                 {STATUSES.map(s => (
-                  <button key={s} onClick={() => handleStatusChange(s)}
+                  <button key={s} onClick={() => askStatusChange(s)}
                     className={`text-xs px-4 py-2 rounded-full border transition-all ${
                       lead.status === s
                         ? 'bg-ink text-white border-ink font-medium'
@@ -153,6 +234,19 @@ export default function LeadDetail() {
                   </button>
                 ))}
               </div>
+              {pendingStatus && (
+                <div className="mt-4 p-3 rounded-xl" style={{ background:'var(--c-surface-2)', border:'1px solid var(--c-border-2)' }}>
+                  <p className="text-xs text-gray-500 mb-2">Move from <b>{lead.status}</b> to <b>{pendingStatus}</b>. Add a note (required):</p>
+                  <textarea className="input text-sm" rows={2} autoFocus style={{ width:'100%', resize:'vertical' }}
+                    placeholder="e.g. Called parent, visit booked for Saturday"
+                    value={stageNote} onChange={e => setStageNote(e.target.value)} />
+                  {stageError && <p className="text-xs text-red-500 mt-1">{stageError}</p>}
+                  <div className="flex gap-2 mt-2 justify-end">
+                    <button className="btn-ghost text-sm" onClick={() => setPendingStatus(null)} disabled={stageSaving}>Cancel</button>
+                    <button className="btn-primary text-sm" onClick={confirmStatusChange} disabled={stageSaving}>{stageSaving ? 'Saving...' : 'Move stage'}</button>
+                  </div>
+                </div>
+              )}
               {/* Progress bar */}
               <div className="flex items-center gap-0 mt-4">
                 {STATUSES.map((s, i) => (
@@ -201,15 +295,15 @@ export default function LeadDetail() {
               </div>
 
               {/* Add note */}
-              <div className="flex gap-2 pt-4 border-t border-gray-100">
-                <select className="input w-32 flex-shrink-0 text-xs" value={noteType} onChange={e => setNoteType(e.target.value)}>
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center', paddingTop:16, borderTop:'1px solid #f3f4f6' }}>
+                <select className="input text-xs" style={{ width:120, flexShrink:0 }} value={noteType} onChange={e => setNoteType(e.target.value)}>
                   {['Note','Call','WhatsApp','Email','Visit'].map(t => <option key={t}>{t}</option>)}
                 </select>
-                <input type="text" className="input flex-1 text-sm"
+                <input type="text" className="input text-sm" style={{ flex:'1 1 200px', width:'auto', minWidth:0 }}
                   placeholder="Add a note or log interaction..."
                   value={note} onChange={e => setNote(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addNote()} />
-                <button onClick={addNote} disabled={saving} className="btn-primary px-4">
+                <button onClick={addNote} disabled={saving} className="btn-primary px-4" style={{ flexShrink:0 }}>
                   {saving ? '...' : 'Add'}
                 </button>
               </div>
