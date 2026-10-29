@@ -15,7 +15,7 @@ const ROLE_ALLOWED = {
 }
 
 const ROLE_HOME = {
-  chairman:          '/dashboard',
+  chairman:          '/chairman',
   admin:             '/dashboard',
   staff:             '/staff-dashboard',
   teacher:           '/teacher-dashboard',
@@ -143,7 +143,7 @@ export default function Sidebar({ onClose, mobile }) {
             ) : null
           }
           if (!canSee(item.to)) return null
-          if (item.to === homeLink || item.to === '/dashboard') return null
+          if (item.to === homeLink || (item.to === '/dashboard' && role !== 'chairman')) return null
           if (item.feature && !features[item.feature]) return null
           return (
             <NavLink key={item.to} to={item.to} onClick={go}
