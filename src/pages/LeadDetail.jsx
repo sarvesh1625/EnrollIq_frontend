@@ -48,7 +48,7 @@ function ScoreBar({ label, value, max=20, color='bg-brand-500' }) {
 // Who handles this lead. Everyone sees the name; only admins can change it.
 function CounsellorCard({ lead, onChanged }) {
   const { user } = useAuth()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = ['admin', 'chairman'].includes(user?.role)
   const [opts, setOpts]       = useState(null)
   const [history, setHistory] = useState([])
   const [busy, setBusy]       = useState(false)

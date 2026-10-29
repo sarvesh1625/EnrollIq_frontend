@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import BranchSwitcher from './BranchSwitcher'
 
 const ROLE_ALLOWED = {
+  chairman:          null,
   admin:             null,
   staff:             ['/leads','/students','/attendance','/exams','/communication'],
   teacher:           ['/students','/attendance','/exams'],
@@ -14,6 +15,7 @@ const ROLE_ALLOWED = {
 }
 
 const ROLE_HOME = {
+  chairman:          '/dashboard',
   admin:             '/dashboard',
   staff:             '/staff-dashboard',
   teacher:           '/teacher-dashboard',
@@ -23,6 +25,7 @@ const ROLE_HOME = {
 }
 
 const ROLE_META = {
+  chairman:          { label:'Chairman',       color:'#92400e', bg:'#fef3c7' },
   admin:             { label:'Admin',          color:'#7c3aed', bg:'#f5f3ff' },
   staff:             { label:'Staff',          color:'#2563eb', bg:'#eff6ff' },
   teacher:           { label:'Teacher',        color:'#059669', bg:'#f0fdf4' },
@@ -73,6 +76,8 @@ export default function Sidebar({ onClose, mobile }) {
   // an unknown role (e.g. a typo in the database) must not crash the whole app: show no pages instead of throwing
   const allowed  = Object.prototype.hasOwnProperty.call(ROLE_ALLOWED, role) ? ROLE_ALLOWED[role] : []
   const homeLink = ROLE_HOME[role] || '/dashboard'
+  // chairman and admin both get the full menu; chairman is the owner role above branch admins
+  const isAdminLike = role === 'admin' || role === 'chairman'
 
   // lead counsellors can always open Leads and Pipeline, whatever their role
   const counsellorPages = user?.is_counsellor ? ['/leads', '/pipeline'] : []
@@ -115,7 +120,7 @@ export default function Sidebar({ onClose, mobile }) {
       </div>
 
       {/* Branch switcher (enterprise multi-branch; shows only if 2+ branches) */}
-      {role === 'admin' && <BranchSwitcher variant="sidebar" />}
+      {isAdminLike && <BranchSwitcher variant="sidebar" />}
 
       {/* Nav */}
       <nav className="sb-nav">
@@ -130,10 +135,10 @@ export default function Sidebar({ onClose, mobile }) {
           if (item.section) {
             // Only show section header if admin or has items in this section
             const hasItems = NAV.slice(i+1).some(n => n.to && canSee(n.to) && !n.section)
-            if (!hasItems || (role !== 'admin' && item.section === 'Growth' && !canSee('/analytics'))) return null
-            if (role !== 'admin' && !['Finance & Ops','Academic','Main'].includes(item.section) &&
+            if (!hasItems || (!isAdminLike && item.section === 'Growth' && !canSee('/analytics'))) return null
+            if (!isAdminLike && !['Finance & Ops','Academic','Main'].includes(item.section) &&
                 !NAV.slice(i+1, NAV.findIndex((n,j) => j > i && n.section)).some(n => n.to && canSee(n.to))) return null
-            return role === 'admin' ? (
+            return isAdminLike ? (
               <p key={i} className="sb-section-label">{item.section}</p>
             ) : null
           }
@@ -152,7 +157,7 @@ export default function Sidebar({ onClose, mobile }) {
 
       {/* Footer */}
       <div className="sb-footer">
-        {role === 'admin' && (
+        {isAdminLike && (
           <a href="/discover" target="_blank" rel="noreferrer" onClick={go}
             className="sb-link" style={{ color:'var(--c-brand)', marginBottom:2 }}>
             <span className="icon">🔍</span>

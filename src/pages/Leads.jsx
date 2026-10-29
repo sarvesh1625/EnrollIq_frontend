@@ -27,7 +27,7 @@ export default function Leads() {
   const navigate = useNavigate()
   const [sp] = useSearchParams()
   const { user } = useAuth()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = ['admin', 'chairman'].includes(user?.role)
   const [opts, setOpts] = useState(null)
   useEffect(() => { if (isAdmin) getCounsellors().then(r => setOpts(r.data)).catch(() => {}) }, [isAdmin])
   const changeCounsellor = async (lead, value) => {
@@ -37,7 +37,7 @@ export default function Leads() {
       setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, assigned_to: r.data.assigned_to, assigned_name: r.data.assigned_name } : l))
     } catch (e) { setError(e.response?.data?.message || 'Could not change counsellor') }
   }
-  const [assignFilter, setAssignFilter] = useState(sp.get('assigned_to') || (user?.is_counsellor && user?.role !== 'admin' ? 'me' : 'all'))
+  const [assignFilter, setAssignFilter] = useState(sp.get('assigned_to') || (user?.is_counsellor && !['admin', 'chairman'].includes(user?.role) ? 'me' : 'all'))
   const [leads,   setLeads]   = useState([])
   const [total,   setTotal]   = useState(0)
   const [loading, setLoading] = useState(true)

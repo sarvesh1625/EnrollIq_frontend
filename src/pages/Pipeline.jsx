@@ -17,7 +17,7 @@ export default function Pipeline() {
   const navigate  = useNavigate()
   const { user } = useAuth()
   // a counsellor (not admin) works their own leads; admin sees everything
-  const leadParams = user?.is_counsellor && user?.role !== 'admin' ? { limit: 200, assigned_to: 'me' } : { limit: 200 }
+  const leadParams = user?.is_counsellor && !['admin', 'chairman'].includes(user?.role) ? { limit: 200, assigned_to: 'me' } : { limit: 200 }
   const [leads,   setLeads]   = useState([])
   const [loading, setLoading] = useState(true)
   const [dragging,setDragging]= useState(null)
