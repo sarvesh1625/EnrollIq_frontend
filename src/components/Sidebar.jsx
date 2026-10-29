@@ -70,7 +70,8 @@ export default function Sidebar({ onClose, mobile }) {
   }, [])
   const role = user?.role || 'admin'
   const meta = ROLE_META[role] || ROLE_META.admin
-  const allowed  = ROLE_ALLOWED[role]
+  // an unknown role (e.g. a typo in the database) must not crash the whole app: show no pages instead of throwing
+  const allowed  = Object.prototype.hasOwnProperty.call(ROLE_ALLOWED, role) ? ROLE_ALLOWED[role] : []
   const homeLink = ROLE_HOME[role] || '/dashboard'
 
   // lead counsellors can always open Leads and Pipeline, whatever their role
