@@ -26,6 +26,7 @@ import RoleManagement from './pages/RoleManagement'
 import Settings       from './pages/Settings'
 import Counsellors    from './pages/Counsellors'
 import GroupDashboard from './pages/GroupDashboard'
+import Posters        from './pages/Posters'
 import SchoolProfile  from './pages/SchoolProfile'
 import AdsManagement  from './pages/AdsManagement'
 import RoleDashboard from './pages/RoleDashboard'
@@ -66,6 +67,7 @@ export default function App() {
         {/* Protected — school admin/staff */}
         <Route path="/dashboard"     element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/chairman"      element={<PrivateRoute><GroupDashboard /></PrivateRoute>} />
+        <Route path="/posters"       element={<PrivateRoute><Posters /></PrivateRoute>} />
         <Route path="/leads"         element={<PrivateRoute><Leads /></PrivateRoute>} />
         <Route path="/leads/new"     element={<PrivateRoute><AddLead /></PrivateRoute>} />
         <Route path="/leads/:id"     element={<PrivateRoute><LeadDetail /></PrivateRoute>} />

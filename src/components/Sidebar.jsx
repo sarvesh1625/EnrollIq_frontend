@@ -51,6 +51,7 @@ const NAV = [
   { to:'/fees',           icon:'◎',  label:'Fees'          },
   { to:'/transport',      icon:'⬡',  label:'Transport'     },
   { to:'/communication',  icon:'✉',  label:'Communication' },
+  { to:'/posters',        icon:'🎉', label:'Posters'       },
   { section: 'Growth' },
   { to:'/analytics',      icon:'↗',  label:'Analytics'     },
   { to:'/import',         icon:'⇑',  label:'Bulk Import'   },
