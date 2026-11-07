@@ -54,7 +54,6 @@ const NAV = [
   { to:'/posters',        icon:'🎉', label:'Posters'       },
   { section: 'Growth' },
   { to:'/analytics',      icon:'↗',  label:'Analytics'     },
-  { to:'/import',         icon:'⇑',  label:'Bulk Import'   },
   { section: 'Settings' },
   { to:'/roles',          icon:'⊛',  label:'Roles'         },
   { to:'/school-profile', icon:'🌐', label:'Public Profile' },
@@ -158,13 +157,6 @@ export default function Sidebar({ onClose, mobile }) {
 
       {/* Footer */}
       <div className="sb-footer">
-        {isAdminLike && (
-          <a href="/discover" target="_blank" rel="noreferrer" onClick={go}
-            className="sb-link" style={{ color:'var(--c-brand)', marginBottom:2 }}>
-            <span className="icon">🔍</span>
-            Discovery
-          </a>
-        )}
         <button onClick={handleLogout} className="sb-link"
           style={{ color:'var(--c-muted)' }}
           onMouseEnter={e => { e.currentTarget.style.background='var(--c-red-lt)'; e.currentTarget.style.color='var(--c-red)' }}
