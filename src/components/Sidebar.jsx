@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import BranchSwitcher from './BranchSwitcher'
+import { SchoolLogo, useSchoolBrand } from './SchoolBrand'
 
 const ROLE_ALLOWED = {
   chairman:          null,
@@ -59,6 +60,7 @@ const NAV = [
   { to:'/school-profile', icon:'🌐', label:'Public Profile' },
   { to:'/ads',            icon:'📣', label:'Ads'           },
   { to:'/settings',       icon:'⚙',  label:'Settings'      },
+  { to:'/school-branding', icon:'🏫', label:'School Logo'   },
   { to:'/tracking', icon:'🛰️', label:'Live Tracking' },
 { to:'/cameras',  icon:'📹', label:'Cameras' },
 { to:'/academic', icon:'🎓', label:'Academic Year' }
@@ -68,6 +70,7 @@ export default function Sidebar({ onClose, mobile }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [features, setFeatures] = useState({})
+  const brand = useSchoolBrand()
   useEffect(() => {
     api.get('/features/mine').then(r => setFeatures(r.data.features || {})).catch(() => setFeatures({}))
   }, [])
@@ -95,7 +98,17 @@ export default function Sidebar({ onClose, mobile }) {
     <>
       {/* Logo */}
       <div className="sb-logo" style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <span className="sb-logo-text">Enroll<span>IQ</span></span>
+        <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+          <SchoolLogo size={38} />
+          <div style={{ minWidth:0 }}>
+            <p style={{ fontFamily:'Georgia, serif', fontWeight:700, fontSize:15, lineHeight:1.2, color:'var(--c-ink)',
+              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:140 }}
+              title={brand?.name || user?.school_name}>
+              {brand?.name || user?.school_name || 'EnrollIQ'}
+            </p>
+            <p style={{ fontSize:10, color:'var(--c-muted)', marginTop:2 }}>Powered by Enroll<span style={{ color:'var(--c-brand)', fontWeight:700 }}>IQ</span></p>
+          </div>
+        </div>
         {mobile && (
           <button onClick={onClose}
             style={{ background:'none', border:'none', cursor:'pointer', fontSize:22, color:'var(--c-muted)', lineHeight:1 }}>

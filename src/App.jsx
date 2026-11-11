@@ -34,6 +34,7 @@ import LiveTracking from "./pages/Livetracking";
 import Cameras from './pages/Cameras'
 import AcademicYear from "./pages/Academicyear";
 import DailyUpdates from "./pages/DailyUpdates";
+import SchoolBranding from './pages/SchoolBranding'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -89,7 +90,7 @@ export default function App() {
         <Route path="/accountant-dashboard"      element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
         <Route path="/receptionist-dashboard"    element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
         <Route path="/transport-dashboard"       element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
-
+        <Route path="/school-branding" element={<PrivateRoute><SchoolBranding /></PrivateRoute>} />
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/kit" element={<SchoolKit />} />

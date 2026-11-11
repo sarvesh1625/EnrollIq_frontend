@@ -8,27 +8,31 @@
 /* ─── TOKENS ─────────────────────────────────────────── */
 :root {
   /* 🎨 ONE variable = full retheme
-     EnrollIQ brand teal (matches the official logo gradient).
-     To revert to orange: brand #d4521a · lt #fdf0ea · dk #b84315 */
-  --c-brand:      #12a38a;
-  --c-brand-lt:   #e7f7f2;
-  --c-brand-dk:   #0d8571;
-
-  /* Brand scale (used by Tailwind brand-* classes) */
-  --brand-50:  #e7f7f2;
-  --brand-100: #d0f0e7;
-  --brand-200: #a3e2d1;
-  --brand-300: #6ccfb6;
-  --brand-400: #38ba9c;
-  --brand-500: #17a88b;
-  --brand-600: #12a38a;
-  --brand-700: #0d8571;
-  --brand-800: #0a6b5b;
-  --brand-900: #085347;
+     EnrollIQ brand indigo (matches the official logo: cyan #3fc1ff · indigo #5d5cf5 · violet #8943f1).
+     Previous teal: brand #12a38a · lt #e7f7f2 · dk #0d8571 */
+  --c-brand:      #5d5cf5;
+  --c-brand-lt:   #eeeeff;
+  --c-brand-dk:   #4a49d6;
+  --c-brand-rgb:  93, 92, 245;
 
   /* Logo accents */
+  --c-cyan:       #3fc1ff;
+  --c-violet:     #8943f1;
+
+  /* Brand scale (used by Tailwind brand-* classes) */
+  --brand-50:  #f0f0ff;
+  --brand-100: #e4e4fe;
+  --brand-200: #cfcffd;
+  --brand-300: #aeaefb;
+  --brand-400: #8d8cf9;
+  --brand-500: #7170f7;
+  --brand-600: #5d5cf5;
+  --brand-700: #4a49d6;
+  --brand-800: #3a39ab;
+  --brand-900: #2c2b80;
+
   --c-navy:      #1b2a4a;
-  --iq-gradient: linear-gradient(135deg, #1697a8 0%, #17a88b 55%, #4fbf6b 100%);
+  --iq-gradient: linear-gradient(135deg, #3fc1ff 0%, #5d5cf5 55%, #8943f1 100%);
 
   /* Surfaces */
   --c-bg:         #f7f5f0;
@@ -307,9 +311,9 @@ textarea.input { resize: vertical; }
   border-radius: 8px; font-size: 13px; font-weight: 600;
   cursor: pointer; font-family: inherit; white-space: nowrap;
   transition: background 0.15s, transform 0.1s, box-shadow 0.15s; text-decoration: none; line-height: 1;
-  box-shadow: 0 1px 2px rgba(18,163,138,0.25);
+  box-shadow: 0 1px 2px rgba(93,92,245,0.25);
 }
-.btn-primary:hover   { background: var(--c-brand-dk); box-shadow: 0 3px 10px rgba(18,163,138,0.3); }
+.btn-primary:hover   { background: var(--c-brand-dk); box-shadow: 0 3px 10px rgba(93,92,245,0.32); }
 .btn-primary:active  { transform: scale(0.98); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
