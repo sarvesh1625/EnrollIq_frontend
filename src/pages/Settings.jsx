@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 
 const THEMES = [
-  { name:'Orange',  hex:'#d4521a', dk:'#b84315', lt:'#fdf0ea' },
+  { name:'Orange',  hex:'#5d5cf5', dk:'#b84315', lt:'#eeeeff' },
   { name:'Blue',    hex:'#2563eb', dk:'#1d4ed8', lt:'#eff6ff' },
   { name:'Green',   hex:'#059669', dk:'#047857', lt:'#f0fdf4' },
   { name:'Purple',  hex:'#7c3aed', dk:'#6d28d9', lt:'#f5f3ff' },

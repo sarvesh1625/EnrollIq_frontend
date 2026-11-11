@@ -65,7 +65,7 @@ function Chatbot({ school }) {
             background:'white', borderRadius:20, boxShadow:'0 20px 60px rgba(0,0,0,0.2)',
             overflow:'hidden', display:'flex', flexDirection:'column', height:'min(480px, calc(100vh - 140px))' }}>
             {/* Header */}
-            <div style={{ background:'linear-gradient(135deg,#1a1814,#d4521a)', padding:'14px 16px',
+            <div style={{ background:'linear-gradient(135deg,#1a1814,#5d5cf5)', padding:'14px 16px',
               display:'flex', alignItems:'center', gap:10 }}>
               <div style={{ width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.2)',
                 display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🤖</div>
@@ -86,7 +86,7 @@ function Chatbot({ school }) {
               {messages.map((msg, i) => (
                 <div key={i} style={{ display:'flex', justifyContent: msg.role==='user'?'flex-end':'flex-start' }}>
                   {msg.role === 'assistant' && (
-                    <div style={{ width:28, height:28, borderRadius:'50%', background:'#fdf0ea',
+                    <div style={{ width:28, height:28, borderRadius:'50%', background:'#eeeeff',
                       display:'flex', alignItems:'center', justifyContent:'center',
                       fontSize:14, marginRight:8, flexShrink:0, alignSelf:'flex-end' }}>🤖</div>
                   )}
@@ -101,7 +101,7 @@ function Chatbot({ school }) {
               ))}
               {loading && (
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <div style={{ width:28, height:28, borderRadius:'50%', background:'#fdf0ea',
+                  <div style={{ width:28, height:28, borderRadius:'50%', background:'#eeeeff',
                     display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>🤖</div>
                   <div style={{ background:'#f8f6f1', borderRadius:14, borderBottomLeftRadius:4, padding:'10px 14px' }}>
                     <div style={{ display:'flex', gap:4 }}>
@@ -136,7 +136,7 @@ function Chatbot({ school }) {
                 style={{ flex:1, minWidth:0, border:'1.5px solid #e5e7eb', borderRadius:10, padding:'9px 12px',
                   fontSize:13, outline:'none' }} />
               <button onClick={sendMessage} disabled={loading || !input.trim()}
-                style={{ background: input.trim()?'#d4521a':'#e5e7eb', color: input.trim()?'white':'#9ca3af',
+                style={{ background: input.trim()?'#5d5cf5':'#e5e7eb', color: input.trim()?'white':'#9ca3af',
                   border:'none', borderRadius:10, width:38, height:38,
                   cursor:input.trim()?'pointer':'default', fontSize:16, flexShrink:0 }}>→</button>
             </div>
@@ -146,7 +146,7 @@ function Chatbot({ school }) {
         {/* Toggle button */}
         <button onClick={() => setOpen(o=>!o)}
           style={{ width:60, height:60, borderRadius:'50%',
-            background: open ? '#1a1814' : 'linear-gradient(135deg,#d4521a,#1a1814)',
+            background: open ? '#1a1814' : 'linear-gradient(135deg,#5d5cf5,#1a1814)',
             border:'none', color:'white', fontSize:26, cursor:'pointer',
             boxShadow:'0 8px 24px rgba(212,82,26,0.4)', display:'flex',
             alignItems:'center', justifyContent:'center', transition:'all 0.2s' }}>
@@ -277,7 +277,7 @@ function EnquiryModal({ school, onClose }) {
               </div>
             </div>
             <button type="submit" disabled={loading}
-              style={{ width:'100%', background:loading?'#9ca3af':'#d4521a', color:'white', border:'none',
+              style={{ width:'100%', background:loading?'#9ca3af':'#5d5cf5', color:'white', border:'none',
                 borderRadius:12, padding:'14px', fontSize:15, fontWeight:700, cursor:loading?'default':'pointer', marginTop:18 }}>
               {loading ? 'Sending...' : 'Book Free Consultation →'}
             </button>
@@ -339,7 +339,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
       <div style={{ position:'relative', height:'100vh', maxHeight:640, minHeight:520, overflow:'hidden', background:'#1a1814' }}>
         {school.banner_url
           ? <img src={imgUrl(school.banner_url)} alt={school.name} style={{ width:'100%',height:'100%',objectFit:'cover',opacity:0.5 }} />
-          : <div style={{ width:'100%',height:'100%',background:'linear-gradient(135deg,#1a1814 0%,#2d2820 40%,#d4521a 100%)',display:'flex',alignItems:'center',justifyContent:'center' }}>
+          : <div style={{ width:'100%',height:'100%',background:'linear-gradient(135deg,#1a1814 0%,#2d2820 40%,#5d5cf5 100%)',display:'flex',alignItems:'center',justifyContent:'center' }}>
               <span style={{ fontFamily:'Georgia,serif',fontSize:'clamp(90px,20vw,180px)',fontWeight:900,color:'rgba(255,255,255,0.04)' }}>{school.name[0]}</span>
             </div>
         }
@@ -350,14 +350,14 @@ export default function SchoolLanding({ school: initial, onBack }) {
           <button onClick={onBack} style={{ background:'rgba(255,255,255,0.1)',color:'white',border:'1px solid rgba(255,255,255,0.2)',borderRadius:10,padding:'8px 16px',fontSize:13,fontWeight:600,cursor:'pointer',backdropFilter:'blur(8px)' }}>← Back</button>
           <div style={{ display:'flex',gap:12,flexWrap:'wrap' }}>
             {school.phone && <a href={`tel:${school.phone}`} style={{ background:'rgba(255,255,255,0.1)',color:'white',border:'1px solid rgba(255,255,255,0.2)',borderRadius:10,padding:'8px 16px',fontSize:13,fontWeight:600,textDecoration:'none',backdropFilter:'blur(8px)' }}>📞 {school.phone}</a>}
-            <button onClick={()=>setShowEnquiry(true)} style={{ background:'#d4521a',color:'white',border:'none',borderRadius:10,padding:'8px 20px',fontSize:13,fontWeight:700,cursor:'pointer' }}>Enquire Now</button>
+            <button onClick={()=>setShowEnquiry(true)} style={{ background:'#5d5cf5',color:'white',border:'none',borderRadius:10,padding:'8px 20px',fontSize:13,fontWeight:700,cursor:'pointer' }}>Enquire Now</button>
           </div>
         </div>
 
         {/* Hero text */}
         <div style={{ position:'absolute',bottom:0,left:0,right:0,padding:'0 clamp(16px,4vw,40px) clamp(32px,6vw,52px)' }}>
           <div style={{ maxWidth:900,margin:'0 auto' }}>
-            {school.board && <span style={{ display:'inline-block',background:'#d4521a',color:'white',fontSize:11,fontWeight:700,padding:'4px 12px',borderRadius:20,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:14 }}>{school.board} School</span>}
+            {school.board && <span style={{ display:'inline-block',background:'#5d5cf5',color:'white',fontSize:11,fontWeight:700,padding:'4px 12px',borderRadius:20,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:14 }}>{school.board} School</span>}
             <h1 style={{ fontFamily:'Georgia,serif',fontSize:'clamp(30px,7vw,56px)',fontWeight:800,color:'white',lineHeight:1.1,marginBottom:10,textShadow:'0 2px 20px rgba(0,0,0,0.4)' }}>{school.name}</h1>
             {school.tagline && <p style={{ color:'rgba(255,255,255,0.7)',fontSize:'clamp(15px,2.5vw,18px)',marginBottom:16,fontStyle:'italic' }}>"{school.tagline}"</p>}
             <div style={{ display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',marginBottom:28 }}>
@@ -366,7 +366,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
               {school.established_year && <span style={{ color:'rgba(255,255,255,0.7)',fontSize:14 }}>Est. {school.established_year}</span>}
               {school.rating>0 && <span style={{ color:'#fbbf24',fontSize:14,display:'flex',alignItems:'center',gap:4 }}>★ {school.rating} ({school.review_count} reviews)</span>}
             </div>
-            <button onClick={()=>setShowEnquiry(true)} style={{ background:'#d4521a',color:'white',border:'none',borderRadius:14,padding:'clamp(13px,2vw,16px) clamp(28px,5vw,40px)',fontSize:'clamp(15px,2vw,17px)',fontWeight:700,cursor:'pointer',boxShadow:'0 8px 24px rgba(212,82,26,0.5)' }}>
+            <button onClick={()=>setShowEnquiry(true)} style={{ background:'#5d5cf5',color:'white',border:'none',borderRadius:14,padding:'clamp(13px,2vw,16px) clamp(28px,5vw,40px)',fontSize:'clamp(15px,2vw,17px)',fontWeight:700,cursor:'pointer',boxShadow:'0 8px 24px rgba(212,82,26,0.5)' }}>
               Book Free Campus Visit →
             </button>
           </div>
@@ -397,7 +397,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
         {/* About */}
         {school.description && (
           <div style={{ marginBottom:'clamp(36px,6vw,56px)' }}>
-            <p style={{ fontSize:11,fontWeight:700,color:'#d4521a',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:10 }}>About Us</p>
+            <p style={{ fontSize:11,fontWeight:700,color:'#5d5cf5',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:10 }}>About Us</p>
             <h2 style={{ fontFamily:'Georgia,serif',fontSize:'clamp(24px,5vw,32px)',fontWeight:700,color:'#1a1814',marginBottom:16 }}>
               Welcome to {school.name}
             </h2>
@@ -407,13 +407,13 @@ export default function SchoolLanding({ school: initial, onBack }) {
 
         {/* Why choose us */}
         {highlights.length > 0 && (
-          <div style={{ background:'linear-gradient(135deg,#fdf0ea,#fff8f5)',borderRadius:24,padding:'clamp(20px,4vw,40px)',marginBottom:'clamp(36px,6vw,56px)',border:'1px solid #fde8d8' }}>
-            <p style={{ fontSize:11,fontWeight:700,color:'#d4521a',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Our Advantage</p>
+          <div style={{ background:'linear-gradient(135deg,#eeeeff,#fff8f5)',borderRadius:24,padding:'clamp(20px,4vw,40px)',marginBottom:'clamp(36px,6vw,56px)',border:'1px solid #fde8d8' }}>
+            <p style={{ fontSize:11,fontWeight:700,color:'#5d5cf5',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Our Advantage</p>
             <h2 style={{ fontFamily:'Georgia,serif',fontSize:'clamp(22px,5vw,28px)',fontWeight:700,color:'#1a1814',marginBottom:28 }}>Why choose {school.name}?</h2>
             <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(210px,1fr))',gap:16 }}>
               {highlights.map((h,i)=>(
                 <div key={i} style={{ display:'flex',alignItems:'flex-start',gap:12 }}>
-                  <div style={{ width:32,height:32,borderRadius:8,background:'#d4521a',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:700,fontSize:14,flexShrink:0 }}>✦</div>
+                  <div style={{ width:32,height:32,borderRadius:8,background:'#5d5cf5',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:700,fontSize:14,flexShrink:0 }}>✦</div>
                   <div style={{ paddingTop:2 }}>
                     {h.heading && <p style={{ fontSize:14,fontWeight:700,color:'#1a1814',lineHeight:1.5,marginBottom:2 }}>{h.heading}</p>}
                     {h.content && <p style={{ fontSize:13,color:'#4b5563',lineHeight:1.6 }}>{h.content}</p>}
@@ -427,18 +427,18 @@ export default function SchoolLanding({ school: initial, onBack }) {
         {/* Faculty */}
         {faculty.length > 0 && (
           <div style={{ marginBottom:'clamp(36px,6vw,56px)' }}>
-            <p style={{ fontSize:11,fontWeight:700,color:'#d4521a',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Meet The Team</p>
+            <p style={{ fontSize:11,fontWeight:700,color:'#5d5cf5',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Meet The Team</p>
             <h2 style={{ fontFamily:'Georgia,serif',fontSize:'clamp(24px,5vw,32px)',fontWeight:700,color:'#1a1814',marginBottom:24 }}>Our Faculty</h2>
             <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))',gap:24 }}>
               {faculty.map(f=>(
                 <div key={f.id} style={{ textAlign:'center' }}>
-                  <div style={{ width:96,height:96,borderRadius:'50%',overflow:'hidden',background:'#f3f4f6',margin:'0 auto 14px',border:'3px solid #fdf0ea' }}>
+                  <div style={{ width:96,height:96,borderRadius:'50%',overflow:'hidden',background:'#f3f4f6',margin:'0 auto 14px',border:'3px solid #eeeeff' }}>
                     {f.photo_url
                       ? <img src={f.photo_url} alt={f.name} style={{ width:'100%',height:'100%',objectFit:'cover' }} />
                       : <div style={{ width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:32,color:'#d1d5db' }}>👤</div>}
                   </div>
                   <p style={{ fontSize:15,fontWeight:700,color:'#1a1814' }}>{f.name}</p>
-                  {f.designation && <p style={{ fontSize:12,color:'#d4521a',fontWeight:600,marginTop:2 }}>{f.designation}</p>}
+                  {f.designation && <p style={{ fontSize:12,color:'#5d5cf5',fontWeight:600,marginTop:2 }}>{f.designation}</p>}
                   {f.subject && <p style={{ fontSize:12,color:'#6b7280',marginTop:2 }}>{f.subject}</p>}
                   {f.years_experience && <p style={{ fontSize:11,color:'#9ca3af',marginTop:4 }}>{f.years_experience}+ yrs experience</p>}
                   {f.bio && <p style={{ fontSize:12,color:'#6b7280',marginTop:8,lineHeight:1.6 }}>{f.bio}</p>}
@@ -451,7 +451,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
         {/* Gallery */}
         {gallery.length > 0 && (
           <div style={{ marginBottom:'clamp(36px,6vw,56px)' }}>
-            <p style={{ fontSize:11,fontWeight:700,color:'#d4521a',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Campus Life</p>
+            <p style={{ fontSize:11,fontWeight:700,color:'#5d5cf5',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Campus Life</p>
             <h2 style={{ fontFamily:'Georgia,serif',fontSize:'clamp(24px,5vw,32px)',fontWeight:700,color:'#1a1814',marginBottom:24 }}>School Gallery</h2>
             <div className="sl-gallery" style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14 }}>
               {gallery.map((img,i)=>(
@@ -479,7 +479,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
         {/* Facilities */}
         {school.facilities?.length > 0 && (
           <div style={{ marginBottom:'clamp(36px,6vw,56px)' }}>
-            <p style={{ fontSize:11,fontWeight:700,color:'#d4521a',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Infrastructure</p>
+            <p style={{ fontSize:11,fontWeight:700,color:'#5d5cf5',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Infrastructure</p>
             <h2 style={{ fontFamily:'Georgia,serif',fontSize:'clamp(24px,5vw,32px)',fontWeight:700,color:'#1a1814',marginBottom:24 }}>World-class Facilities</h2>
             <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:12 }}>
               {(Array.isArray(school.facilities)?school.facilities:school.facilities?.split(',')||[]).map(f=>(
@@ -500,7 +500,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
         {/* Testimonials */}
         {testimonials.length > 0 && (
           <div style={{ marginBottom:'clamp(36px,6vw,56px)' }}>
-            <p style={{ fontSize:11,fontWeight:700,color:'#d4521a',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Parent Reviews</p>
+            <p style={{ fontSize:11,fontWeight:700,color:'#5d5cf5',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:8 }}>Parent Reviews</p>
             <h2 style={{ fontFamily:'Georgia,serif',fontSize:'clamp(24px,5vw,32px)',fontWeight:700,color:'#1a1814',marginBottom:24 }}>What parents say</h2>
             <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))',gap:16 }}>
               {testimonials.map(t=>(
@@ -514,7 +514,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
                     "{t.review}"
                   </p>
                   <div style={{ display:'flex',alignItems:'center',gap:10 }}>
-                    <div style={{ width:36,height:36,borderRadius:'50%',background:'#fdf0ea',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,fontWeight:700,color:'#d4521a',flexShrink:0 }}>
+                    <div style={{ width:36,height:36,borderRadius:'50%',background:'#eeeeff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,fontWeight:700,color:'#5d5cf5',flexShrink:0 }}>
                       {t.parent_name[0]}
                     </div>
                     <div>
@@ -531,7 +531,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
         {/* CTA */}
         <div style={{ background:'#1a1814',borderRadius:28,padding:'clamp(32px,6vw,52px) clamp(20px,5vw,48px)',textAlign:'center',marginBottom:0,position:'relative',overflow:'hidden' }}>
           <div style={{ position:'absolute',inset:0,backgroundImage:'radial-gradient(circle at 80% 50%,rgba(212,82,26,0.25),transparent 60%)' }} />
-          <p style={{ fontSize:11,fontWeight:700,color:'#d4521a',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:10,position:'relative' }}>Ready to join?</p>
+          <p style={{ fontSize:11,fontWeight:700,color:'#5d5cf5',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:10,position:'relative' }}>Ready to join?</p>
           <h2 style={{ fontFamily:'Georgia,serif',fontSize:'clamp(24px,6vw,36px)',fontWeight:800,color:'white',marginBottom:12,lineHeight:1.2,position:'relative' }}>
             Give your child the best start at {school.name}
           </h2>
@@ -539,7 +539,7 @@ export default function SchoolLanding({ school: initial, onBack }) {
             Our admissions counsellor will call you within 24 hours
           </p>
           <div style={{ display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap',position:'relative' }}>
-            <button onClick={()=>setShowEnquiry(true)} style={{ background:'#d4521a',color:'white',border:'none',borderRadius:14,padding:'15px 40px',fontSize:16,fontWeight:700,cursor:'pointer',boxShadow:'0 8px 24px rgba(212,82,26,0.4)' }}>
+            <button onClick={()=>setShowEnquiry(true)} style={{ background:'#5d5cf5',color:'white',border:'none',borderRadius:14,padding:'15px 40px',fontSize:16,fontWeight:700,cursor:'pointer',boxShadow:'0 8px 24px rgba(212,82,26,0.4)' }}>
               Enquire Now →
             </button>
             {school.phone && (

@@ -41,7 +41,7 @@ const STATUS_STYLE = {
   Lost:           { bg:'var(--c-red-lt)', c:'var(--c-red)' },
 }
 const NOTIF_ICON = {
-  lead_alert:       { bg:'#fff1ea', c:'#d4521a', s:'⚡' },
+  lead_alert:       { bg:'#fff1ea', c:'#5d5cf5', s:'⚡' },
   fee_reminder:     { bg:'var(--c-amber-lt)', c:'var(--c-amber)', s:'₹' },
   admission_update: { bg:'var(--c-green-lt)', c:'var(--c-green)', s:'✓' },
   system:           { bg:'#f3f4f6', c:'#6b7280', s:'ℹ' },

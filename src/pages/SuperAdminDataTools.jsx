@@ -155,7 +155,7 @@ export default function DataTools({ token, schools, showToast }) {
     } finally { setDownloading('') }
   }
 
-  const chip = (on) => ({ padding: '7px 14px', borderRadius: 999, fontSize: 13, cursor: 'pointer', border: '1px solid ' + (on ? 'var(--c-brand, #0f9d84)' : '#e5e7eb'), background: on ? 'var(--c-brand-lt, #e6f6f2)' : '#fff', fontWeight: on ? 600 : 400 })
+  const chip = (on) => ({ padding: '7px 14px', borderRadius: 999, fontSize: 13, cursor: 'pointer', border: '1px solid ' + (on ? 'var(--c-brand, #5d5cf5)' : '#e5e7eb'), background: on ? 'var(--c-brand-lt, #eeeeff)' : '#fff', fontWeight: on ? 600 : 400 })
 
   return (
     <div>

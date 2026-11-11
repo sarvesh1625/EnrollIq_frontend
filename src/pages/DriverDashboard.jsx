@@ -33,10 +33,10 @@ function DriverLogin({ onLogin }) {
         <div style={{ textAlign:'center', marginBottom:28 }}>
           <div style={{ fontSize:48, marginBottom:8 }}>🚌</div>
           <h1 style={{ fontFamily:'serif', fontSize:28, fontWeight:700, color:'#1a1814' }}>
-            Enroll<span style={{ color:'#d4521a' }}>IQ</span>
+            Enroll<span style={{ color:'#5d5cf5' }}>IQ</span>
           </h1>
-          <div style={{ display:'inline-block', background:'#fdf0ea', borderRadius:20, padding:'3px 14px', marginTop:6 }}>
-            <span style={{ fontSize:12, color:'#d4521a', fontWeight:600 }}>Driver Portal</span>
+          <div style={{ display:'inline-block', background:'#eeeeff', borderRadius:20, padding:'3px 14px', marginTop:6 }}>
+            <span style={{ fontSize:12, color:'#5d5cf5', fontWeight:600 }}>Driver Portal</span>
           </div>
         </div>
 
@@ -59,7 +59,7 @@ function DriverLogin({ onLogin }) {
             onChange={e => setPhone(e.target.value.replace(/\D/g,'').slice(0,10))}
             placeholder="10-digit mobile number"
             required
-            style={{ width:'100%', border:'1.5px solid', borderColor:phone.length===10?'#d4521a':'#e5e7eb', borderRadius:12, padding:'13px 14px', fontSize:15, outline:'none', boxSizing:'border-box', marginBottom:16 }}
+            style={{ width:'100%', border:'1.5px solid', borderColor:phone.length===10?'#5d5cf5':'#e5e7eb', borderRadius:12, padding:'13px 14px', fontSize:15, outline:'none', boxSizing:'border-box', marginBottom:16 }}
           />
           <button
             type="submit"
@@ -130,7 +130,7 @@ function QRScanner({ token, driver, tripType, onScanned }) {
             onKeyDown={e => e.key === 'Enter' && handleScan()}
             placeholder="Scan QR or tap RFID card..."
             autoComplete="off"
-            style={{ flex:1, border:'2px solid', borderColor:qr?'#d4521a':'#e5e7eb', borderRadius:10, padding:'12px 14px', fontSize:14, outline:'none' }}
+            style={{ flex:1, border:'2px solid', borderColor:qr?'#5d5cf5':'#e5e7eb', borderRadius:10, padding:'12px 14px', fontSize:14, outline:'none' }}
           />
           <button
             onClick={handleScan}
@@ -395,7 +395,7 @@ function DriverDashboard({ token, driver, onLogout }) {
               const scanned = scannedToday.find(sc => sc.student_name === s.student_name)
               return (
                 <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom:i<routeData.students.length-1?'1px solid #f9f9f9':'none' }}>
-                  <div style={{ width:38, height:38, borderRadius:'50%', background:'#fdf0ea', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:700, color:'#d4521a', flexShrink:0 }}>
+                  <div style={{ width:38, height:38, borderRadius:'50%', background:'#eeeeff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:700, color:'#5d5cf5', flexShrink:0 }}>
                     {s.student_name[0]}
                   </div>
                   <div style={{ flex:1 }}>

@@ -355,15 +355,15 @@ function PlatformCard({ platform, saved, onSave, schoolSlug }) {
 
                 {/* Landing URL */}
                 {platform.landing_url && (
-                  <div style={{ background:'#fdf0ea', borderRadius:12, padding:14, marginBottom:16 }}>
-                    <p style={{ fontSize:11, fontWeight:700, color:'#d4521a', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Your unique landing URL</p>
+                  <div style={{ background:'#eeeeff', borderRadius:12, padding:14, marginBottom:16 }}>
+                    <p style={{ fontSize:11, fontWeight:700, color:'#5d5cf5', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Your unique landing URL</p>
                     <p style={{ fontSize:11, color:'#9ca3af', marginBottom:10 }}>Paste this as the destination URL in your ad campaign. Parents will land directly on your school page.</p>
                     <div style={{ display:'flex', gap:8 }}>
                       <div style={{ flex:1, background:'white', border:'1px solid #fbd6c2', borderRadius:8, padding:'9px 12px', fontSize:12, fontFamily:'monospace', color:'#1a1814', wordBreak:'break-all' }}>
                         {landingUrl}
                       </div>
                       <button onClick={() => { navigator.clipboard.writeText(landingUrl); showToast('✅ URL copied!') }}
-                        style={{ background:'#d4521a', color:'white', border:'none', borderRadius:8, padding:'9px 14px', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}>
+                        style={{ background:'#5d5cf5', color:'white', border:'none', borderRadius:8, padding:'9px 14px', fontSize:12, fontWeight:600, cursor:'pointer', flexShrink:0 }}>
                         Copy
                       </button>
                     </div>
@@ -520,7 +520,7 @@ export default function AdsManagement() {
             { label:'Connected',       value: `${connectedCount}/${PLATFORMS.length}`, color:'#1a1814' },
             { label:'Ad clicks (30d)', value: stats.clicks       || 0, color:'#2563eb' },
             { label:'Enquiries (30d)', value: stats.enquiries    || 0, color:'#16a34a' },
-            { label:'Conversion rate', value: `${stats.conversion_rate||0}%`, color:'#d4521a' },
+            { label:'Conversion rate', value: `${stats.conversion_rate||0}%`, color:'#5d5cf5' },
           ].map(s => (
             <div key={s.label} style={{ background:'white', border:'1px solid #f0ede8', borderRadius:12, padding:16 }}>
               <p style={{ fontSize:11, color:'#9ca3af', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>{s.label}</p>
@@ -530,7 +530,7 @@ export default function AdsManagement() {
         </div>
 
         {/* How it works */}
-        <div style={{ background:'#fdf0ea', border:'1px solid #fbd6c2', borderRadius:14, padding:'16px 20px', marginBottom:24 }}>
+        <div style={{ background:'#eeeeff', border:'1px solid #fbd6c2', borderRadius:14, padding:'16px 20px', marginBottom:24 }}>
           <p style={{ fontSize:13, fontWeight:600, color:'#c0410e', marginBottom:10 }}>How ads integration works</p>
           <div className="g-4" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
             {[
@@ -541,7 +541,7 @@ export default function AdsManagement() {
             ].map(s => (
               <div key={s.n} style={{ textAlign:'center' }}>
                 <div style={{ fontSize:22, marginBottom:4 }}>{s.icon}</div>
-                <div style={{ width:18, height:18, borderRadius:'50%', background:'#d4521a', color:'white', fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 4px' }}>{s.n}</div>
+                <div style={{ width:18, height:18, borderRadius:'50%', background:'#5d5cf5', color:'white', fontSize:10, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 4px' }}>{s.n}</div>
                 <p style={{ fontSize:12, fontWeight:600, color:'#1a1814' }}>{s.t}</p>
                 <p style={{ fontSize:11, color:'#9ca3af', marginTop:2 }}>{s.d}</p>
               </div>

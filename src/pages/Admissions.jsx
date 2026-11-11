@@ -491,7 +491,7 @@ export default function Admissions() {
               { n:'2', label:'Under review',        desc:'Team reviews documents', color:'#2563eb' },
               { n:'3', label:'Interview scheduled', desc:'Campus visit / interview', color:'#b45309' },
               { n:'4', label:'Admitted',            desc:'Approval given', color:'#15803d' },
-              { n:'5', label:'Enroll as Student',  desc:'Click button → student record created', color:'#d4521a' },
+              { n:'5', label:'Enroll as Student',  desc:'Click button → student record created', color:'#5d5cf5' },
             ].map((step, i) => (
               <div key={step.n} className="flex items-center">
                 <div className="text-center px-3">

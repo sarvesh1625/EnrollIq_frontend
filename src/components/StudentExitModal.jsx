@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api/axios'
 
 const EXIT_TYPES = ['Dropout', 'Withdrawn', 'School Transfer', 'Branch Transfer', 'Graduated', 'Expelled']
-const TEAL = '#12a38a'
+const TEAL = '#5d5cf5'
 
 const CLEARANCES = [
   { key: 'fees_cleared',       note: 'fees_note',       label: 'Fees Cleared',        hint: 'All pending fees paid / settled' },
@@ -100,7 +100,7 @@ export default function StudentExitModal({ student, onClose, onDone }) {
               <div>
                 <p style={{ fontSize:15, fontWeight:700, color:'#1a1814', marginTop:0 }}>{cl.label}</p>
                 <p style={{ fontSize:13, color:'#6b7280', marginTop:-6, marginBottom:18 }}>{cl.hint}</p>
-                <label style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', border:`2px solid ${clearance[cl.key]?TEAL:'#e5e7eb'}`, borderRadius:12, cursor:'pointer', background:clearance[cl.key]?'#e7f7f2':'#fff', marginBottom:16 }}>
+                <label style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', border:`2px solid ${clearance[cl.key]?TEAL:'#e5e7eb'}`, borderRadius:12, cursor:'pointer', background:clearance[cl.key]?'#eeeeff':'#fff', marginBottom:16 }}>
                   <input type="checkbox" checked={!!clearance[cl.key]} onChange={e=>saveClearance({ [cl.key]: e.target.checked })} style={{ width:18, height:18, accentColor:TEAL }} />
                   <span style={{ fontSize:14, fontWeight:600, color:'#1a1814' }}>{cl.label} — Confirmed</span>
                 </label>
@@ -115,7 +115,7 @@ export default function StudentExitModal({ student, onClose, onDone }) {
             <div>
               <p style={{ fontSize:15, fontWeight:700, color:'#1a1814', marginTop:0 }}>Principal Approval</p>
               <p style={{ fontSize:13, color:'#6b7280', marginTop:-6, marginBottom:18 }}>Final sign-off required before the student can be exited.</p>
-              <label style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', border:`2px solid ${clearance.principal_approved?TEAL:'#e5e7eb'}`, borderRadius:12, cursor:'pointer', background:clearance.principal_approved?'#e7f7f2':'#fff', marginBottom:16 }}>
+              <label style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', border:`2px solid ${clearance.principal_approved?TEAL:'#e5e7eb'}`, borderRadius:12, cursor:'pointer', background:clearance.principal_approved?'#eeeeff':'#fff', marginBottom:16 }}>
                 <input type="checkbox" checked={!!clearance.principal_approved} onChange={e=>saveClearance({ principal_approved: e.target.checked })} style={{ width:18, height:18, accentColor:TEAL }} />
                 <span style={{ fontSize:14, fontWeight:600, color:'#1a1814' }}>Approved by Principal</span>
               </label>

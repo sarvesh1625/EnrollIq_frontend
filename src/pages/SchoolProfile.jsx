@@ -289,7 +289,7 @@ export default function SchoolProfile() {
           </div>
           <div style={{ display:'flex', gap:10, flexWrap:'wrap', width:'100%', maxWidth:'fit-content' }}>
             <a href={`/discover?ref=${slug}`} target="_blank" rel="noreferrer"
-              style={{ background:'white', color:'#d4521a', border:'1.5px solid #d4521a', borderRadius:10, padding:'8px 16px', fontSize:13, fontWeight:600, textDecoration:'none', display:'flex', alignItems:'center', justifyContent:'center', gap:6, flex:'1 1 auto', whiteSpace:'nowrap' }}>
+              style={{ background:'white', color:'#5d5cf5', border:'1.5px solid #5d5cf5', borderRadius:10, padding:'8px 16px', fontSize:13, fontWeight:600, textDecoration:'none', display:'flex', alignItems:'center', justifyContent:'center', gap:6, flex:'1 1 auto', whiteSpace:'nowrap' }}>
               👁 Preview public page →
             </a>
             <button onClick={handleSave} disabled={saving}
@@ -435,10 +435,10 @@ export default function SchoolProfile() {
 
               <div style={SECTION}>
                 <p style={SECTION_TITLE}>GPS Coordinates</p>
-                <div style={{ background:'#fdf0ea', border:'1px solid #fbd6c2', borderRadius:12, padding:14, marginBottom:16 }}>
+                <div style={{ background:'#eeeeff', border:'1px solid #fbd6c2', borderRadius:12, padding:14, marginBottom:16 }}>
                   <p style={{ fontSize:13, color:'#c0410e', fontWeight:600, marginBottom:6 }}>How to get coordinates</p>
                   <ol style={{ fontSize:12, color:'#6b7280', paddingLeft:18, lineHeight:2 }}>
-                    <li>Open <a href="https://maps.google.com" target="_blank" rel="noreferrer" style={{ color:'#d4521a' }}>Google Maps</a></li>
+                    <li>Open <a href="https://maps.google.com" target="_blank" rel="noreferrer" style={{ color:'#5d5cf5' }}>Google Maps</a></li>
                     <li>Search for your school name</li>
                     <li>Right-click on the exact location</li>
                     <li>Click the coordinates shown at top — they copy automatically</li>
@@ -458,7 +458,7 @@ export default function SchoolProfile() {
                 {form.latitude && form.longitude && (
                   <div style={{ marginTop:12 }}>
                     <a href={`https://maps.google.com?q=${form.latitude},${form.longitude}`} target="_blank" rel="noreferrer"
-                      style={{ fontSize:12, color:'#d4521a', textDecoration:'none' }}>
+                      style={{ fontSize:12, color:'#5d5cf5', textDecoration:'none' }}>
                       ✓ Verify on Google Maps →
                     </a>
                   </div>
@@ -556,7 +556,7 @@ export default function SchoolProfile() {
                   {highlights.map((h, i) => (
                     <div key={i} style={{ border:'1px solid #f0ede8', borderRadius:14, padding:16, position:'relative' }}>
                       <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
-                        <div style={{ width:32, height:32, borderRadius:8, background:'#fdf0ea', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:700, color:'#d4521a', flexShrink:0 }}>
+                        <div style={{ width:32, height:32, borderRadius:8, background:'#eeeeff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:700, color:'#5d5cf5', flexShrink:0 }}>
                           {i + 1}
                         </div>
                         <div style={{ flex:1, display:'flex', flexDirection:'column', gap:10 }}>
@@ -609,7 +609,7 @@ export default function SchoolProfile() {
                           : <span style={{ fontSize:24, color:'#d1d5db' }}>👤</span>}
                       </div>
                       <p style={{ fontSize:14, fontWeight:700, color:'#1a1814' }}>{f.name}</p>
-                      {f.designation && <p style={{ fontSize:12, color:'#d4521a', fontWeight:600, marginTop:2 }}>{f.designation}</p>}
+                      {f.designation && <p style={{ fontSize:12, color:'#5d5cf5', fontWeight:600, marginTop:2 }}>{f.designation}</p>}
                       {f.subject && <p style={{ fontSize:12, color:'#6b7280', marginTop:2 }}>Teaches {f.subject}</p>}
                       {f.years_experience && <p style={{ fontSize:11, color:'#9ca3af', marginTop:4 }}>{f.years_experience}+ years experience</p>}
                       {f.bio && <p style={{ fontSize:12, color:'#6b7280', marginTop:8, lineHeight:1.5 }}>{f.bio}</p>}
@@ -722,7 +722,7 @@ export default function SchoolProfile() {
               {saving ? 'Saving...' : '✓ Save & Publish Profile'}
             </button>
             <a href={`/discover?ref=${slug}`} target="_blank" rel="noreferrer"
-              style={{ background:'white', color:'#d4521a', border:'1.5px solid #d4521a', borderRadius:10, padding:'10px 20px', fontSize:14, fontWeight:600, textDecoration:'none' }}>
+              style={{ background:'white', color:'#5d5cf5', border:'1.5px solid #5d5cf5', borderRadius:10, padding:'10px 20px', fontSize:14, fontWeight:600, textDecoration:'none' }}>
               👁 Preview →
             </a>
           </div>

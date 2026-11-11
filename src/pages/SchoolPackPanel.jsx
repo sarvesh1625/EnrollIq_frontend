@@ -148,7 +148,7 @@ export default function SchoolPackPanel({ token, school, parseCSV, showToast }) 
       {phase === 'uploading' && upl && (
         <div className="card" style={{ marginBottom: 16 }}>
           <p className="text-sm font-semibold text-ink">Uploading… {pct}% <span className="text-gray-400 font-normal">({mb(upl.done)} of {mb(upl.total)})</span></p>
-          <div style={{ height: 8, background: '#f3f4f6', borderRadius: 99, marginTop: 8 }}><div style={{ height: 8, width: pct + '%', background: 'var(--c-brand, #0f9d84)', borderRadius: 99 }} /></div>
+          <div style={{ height: 8, background: '#f3f4f6', borderRadius: 99, marginTop: 8 }}><div style={{ height: 8, width: pct + '%', background: 'var(--c-brand, #5d5cf5)', borderRadius: 99 }} /></div>
           <p className="text-xs text-gray-400" style={{ marginTop: 8 }}>Keep this page open until the upload finishes.</p>
         </div>
       )}

@@ -83,10 +83,10 @@ function ParentLogin({ onLogin }) {
       <div style={{ background:'white', borderRadius:24, padding:36, width:'100%', maxWidth:400, boxShadow:'0 8px 40px rgba(0,0,0,0.10)' }}>
         <div style={{ textAlign:'center', marginBottom:32 }}>
           <h1 style={{ fontFamily:'serif', fontSize:32, fontWeight:700, color:'#1a1814' }}>
-            Enroll<span style={{ color:'#d4521a' }}>IQ</span>
+            Enroll<span style={{ color:'#5d5cf5' }}>IQ</span>
           </h1>
-          <div style={{ display:'inline-block', background:'#fdf0ea', borderRadius:20, padding:'4px 14px', marginTop:8 }}>
-            <span style={{ fontSize:12, color:'#d4521a', fontWeight:600 }}>Parent Portal</span>
+          <div style={{ display:'inline-block', background:'#eeeeff', borderRadius:20, padding:'4px 14px', marginTop:8 }}>
+            <span style={{ fontSize:12, color:'#5d5cf5', fontWeight:600 }}>Parent Portal</span>
           </div>
         </div>
 
@@ -108,7 +108,7 @@ function ParentLogin({ onLogin }) {
             <input type="tel" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g,'').slice(0,10))}
               placeholder="10-digit mobile number" required
               style={{ width:'100%', border:'1.5px solid #e5e7eb', borderRadius:12, padding:'13px 14px 13px 40px', fontSize:15, outline:'none', boxSizing:'border-box',
-                borderColor: phone.length === 10 ? '#d4521a' : '#e5e7eb' }} />
+                borderColor: phone.length === 10 ? '#5d5cf5' : '#e5e7eb' }} />
           </div>
           <button type="submit" disabled={loading || phone.length < 10}
             style={{ width:'100%', background: phone.length===10 ? '#1a1814' : '#e5e7eb', color: phone.length===10?'white':'#9ca3af',
@@ -323,7 +323,7 @@ function ParentDashboard({ token, children, schoolName, onLogout }) {
       <div style={{ background:'white', borderBottom:'1px solid #f3f4f6', padding:'14px 20px',
         display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:20 }}>
         <h1 style={{ fontFamily:'serif', fontSize:20, fontWeight:700, color:'#1a1814' }}>
-          Enroll<span style={{ color:'#d4521a' }}>IQ</span>
+          Enroll<span style={{ color:'#5d5cf5' }}>IQ</span>
         </h1>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <span style={{ fontSize:11, color:'#9ca3af' }}>{schoolName}</span>
@@ -420,7 +420,7 @@ function ParentDashboard({ token, children, schoolName, onLogout }) {
 
         {loading ? (
           <div style={{ textAlign:'center', padding:48, color:'#9ca3af' }}>
-            <div style={{ width:28, height:28, border:'3px solid #f3f4f6', borderTop:'3px solid #d4521a',
+            <div style={{ width:28, height:28, border:'3px solid #f3f4f6', borderTop:'3px solid #5d5cf5',
               borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 12px' }} />
             <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
             Loading...
@@ -475,7 +475,7 @@ function ParentDashboard({ token, children, schoolName, onLogout }) {
                           )
                         })}
                       </div>
-                      <p style={{ fontSize:11, color:'#d4521a', marginTop:12 }}>Tap to see all exam results →</p>
+                      <p style={{ fontSize:11, color:'#5d5cf5', marginTop:12 }}>Tap to see all exam results →</p>
                     </div>
                   )
                 })()}

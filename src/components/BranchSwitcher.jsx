@@ -62,7 +62,7 @@ export default function BranchSwitcher({ variant = 'sidebar' }) {
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           gap: 8, padding: '9px 12px', borderRadius: 10, cursor: 'pointer',
           background: 'rgba(18,163,138,0.10)', border: '1px solid rgba(18,163,138,0.3)',
-          color: '#0f766e', fontSize: 13, fontWeight: 700,
+          color: '#4a49d6', fontSize: 13, fontWeight: 700,
         }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
           🏫 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{active?.name || 'Branch'}</span>
@@ -84,11 +84,11 @@ export default function BranchSwitcher({ variant = 'sidebar' }) {
                 background: b.id === activeId ? 'rgba(18,163,138,0.08)' : 'transparent',
                 border: 'none', borderTop: '1px solid #f3f4f6',
                 fontSize: 13, fontWeight: b.id === activeId ? 700 : 500,
-                color: b.id === activeId ? '#0f766e' : '#374151',
+                color: b.id === activeId ? '#4a49d6' : '#374151',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
               <span>{b.name}{b.is_main_branch ? ' (Main)' : ''}{b.city ? ` · ${b.city}` : ''}</span>
-              {b.id === activeId && <span style={{ color: '#12a38a' }}>✓</span>}
+              {b.id === activeId && <span style={{ color: '#5d5cf5' }}>✓</span>}
             </button>
           ))}
 
@@ -97,7 +97,7 @@ export default function BranchSwitcher({ variant = 'sidebar' }) {
             <button onClick={() => setShowAdd(true)}
               style={{ width:'100%', textAlign:'left', padding:'10px 12px', cursor:'pointer',
                 background:'transparent', border:'none', borderTop:'1px solid #f3f4f6',
-                fontSize:13, fontWeight:700, color:'#12a38a' }}>
+                fontSize:13, fontWeight:700, color:'#5d5cf5' }}>
               + Add branch
             </button>
           )}
@@ -108,7 +108,7 @@ export default function BranchSwitcher({ variant = 'sidebar' }) {
               <input placeholder="City (optional)" value={newCity} onChange={e => setNewCity(e.target.value)}
                 style={{ padding:'7px 9px', border:'1px solid #e5e7eb', borderRadius:7, fontSize:13 }} />
               <div style={{ display:'flex', gap:6 }}>
-                <button onClick={addBranch} style={{ flex:1, padding:'7px', borderRadius:7, border:'none', background:'#12a38a', color:'#fff', fontSize:12.5, fontWeight:700, cursor:'pointer' }}>Create</button>
+                <button onClick={addBranch} style={{ flex:1, padding:'7px', borderRadius:7, border:'none', background:'#5d5cf5', color:'#fff', fontSize:12.5, fontWeight:700, cursor:'pointer' }}>Create</button>
                 <button onClick={() => { setShowAdd(false); setNewName(''); setNewCity('') }} style={{ padding:'7px 10px', borderRadius:7, border:'1px solid #e5e7eb', background:'#fff', fontSize:12.5, cursor:'pointer' }}>Cancel</button>
               </div>
             </div>

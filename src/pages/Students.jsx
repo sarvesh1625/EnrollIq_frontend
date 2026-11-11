@@ -567,10 +567,10 @@ export default function Students() {
           <div style={{ display:'inline-flex', border:'1.5px solid #e5e7eb', borderRadius:10, overflow:'hidden' }}>
             <button onClick={() => setShowAlumni(false)}
               style={{ padding:'8px 14px', fontSize:13, fontWeight:600, border:'none', cursor:'pointer',
-                background: !showAlumni ? '#12a38a' : '#fff', color: !showAlumni ? '#fff' : '#6b7280' }}>Active</button>
+                background: !showAlumni ? '#5d5cf5' : '#fff', color: !showAlumni ? '#fff' : '#6b7280' }}>Active</button>
             <button onClick={() => setShowAlumni(true)}
               style={{ padding:'8px 14px', fontSize:13, fontWeight:600, border:'none', cursor:'pointer',
-                background: showAlumni ? '#12a38a' : '#fff', color: showAlumni ? '#fff' : '#6b7280' }}>Alumni / Exited</button>
+                background: showAlumni ? '#5d5cf5' : '#fff', color: showAlumni ? '#fff' : '#6b7280' }}>Alumni / Exited</button>
           </div>
           <span style={{ fontSize:12, color:'var(--c-muted)', marginLeft:'auto' }}>{total} shown</span>
         </div>

@@ -133,9 +133,9 @@ export default function Pipeline() {
               return (
                 <div key={colKey}
                   style={{ minWidth:0, display:'flex', flexDirection:'column', borderRadius:12,
-                    background: isOver ? '#fdf0ea' : '#f8f6f1',
+                    background: isOver ? '#eeeeff' : '#f8f6f1',
                     transition:'background 0.15s',
-                    border: isOver ? '2px dashed #d4521a' : '2px dashed transparent',
+                    border: isOver ? '2px dashed #5d5cf5' : '2px dashed transparent',
                   }}
                   onDragOver={e => onDragOver(e, colKey)}
                   onDragLeave={onDragLeave}
@@ -167,14 +167,14 @@ export default function Pipeline() {
                         onClick={() => navigate(`/leads/${lead.id}`)}
                         style={{
                           background:'white',
-                          border:`1px solid ${updating === lead.id ? '#d4521a' : '#f3f4f6'}`,
+                          border:`1px solid ${updating === lead.id ? '#5d5cf5' : '#f3f4f6'}`,
                           borderRadius:10, padding:'10px 12px',
                           cursor:'grab', transition:'all 0.15s',
                           opacity: dragging?.id === lead.id ? 0.4 : 1,
-                          boxShadow: updating === lead.id ? '0 0 0 2px #fdf0ea' : 'none',
+                          boxShadow: updating === lead.id ? '0 0 0 2px #eeeeff' : 'none',
                         }}
                         onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)' }}
-                        onMouseLeave={e => { e.currentTarget.style.boxShadow = updating === lead.id ? '0 0 0 2px #fdf0ea' : 'none' }}
+                        onMouseLeave={e => { e.currentTarget.style.boxShadow = updating === lead.id ? '0 0 0 2px #eeeeff' : 'none' }}
                       >
                         {/* Avatar + name */}
                         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
@@ -199,7 +199,7 @@ export default function Pipeline() {
                         <AIScoreBadge score={lead.ai_score} label={lead.ai_label} />
 
                         {updating === lead.id && (
-                          <p style={{ fontSize:10, color:'#d4521a', marginTop:6 }}>Updating...</p>
+                          <p style={{ fontSize:10, color:'#5d5cf5', marginTop:6 }}>Updating...</p>
                         )}
                       </div>
                     ))}
@@ -209,8 +209,8 @@ export default function Pipeline() {
                       <div style={{
                         flex:1, display:'flex', alignItems:'center', justifyContent:'center',
                         minHeight:80, borderRadius:8, border:'2px dashed',
-                        borderColor: isOver ? '#d4521a' : '#e5e7eb',
-                        color: isOver ? '#d4521a' : '#d1d5db',
+                        borderColor: isOver ? '#5d5cf5' : '#e5e7eb',
+                        color: isOver ? '#5d5cf5' : '#d1d5db',
                         fontSize:12,
                       }}>
                         {isOver ? 'Drop here' : 'No leads'}

@@ -108,13 +108,13 @@ export default function SchoolDiscovery() {
     <div style={{ minHeight:'100vh', background:'#f8f6f1', fontFamily:"'Segoe UI',system-ui,sans-serif" }}>
 
       {/* HERO */}
-      <div style={{ background:'linear-gradient(135deg,#1a1814 0%,#2d2820 60%,#d4521a 100%)', padding:'60px 16px 80px', position:'relative', overflow:'hidden' }}>
+      <div style={{ background:'linear-gradient(135deg,#1a1814 0%,#2d2820 60%,#5d5cf5 100%)', padding:'60px 16px 80px', position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(circle at 80% 50%,rgba(212,82,26,0.15),transparent 60%)', pointerEvents:'none' }} />
 
         {/* Nav */}
         <div style={{ maxWidth:1000, margin:'0 auto 48px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <h1 style={{ fontFamily:'Georgia,serif', fontSize:24, fontWeight:800, color:'white' }}>
-            Enroll<span style={{ color:'#d4521a' }}>IQ</span>
+            Enroll<span style={{ color:'#5d5cf5' }}>IQ</span>
           </h1>
           <a href="/login" style={{ background:'rgba(255,255,255,0.1)', color:'white', border:'1px solid rgba(255,255,255,0.2)', borderRadius:10, padding:'8px 20px', fontSize:13, fontWeight:600, textDecoration:'none' }}>
             School login →
@@ -145,7 +145,7 @@ export default function SchoolDiscovery() {
               {locating ? '⏳' : '📍'}
             </button>
             <button onClick={searchSchools}
-              style={{ background:'#d4521a', color:'white', border:'none', borderRadius:10, padding:'0 24px', fontSize:15, fontWeight:700, cursor:'pointer', flexShrink:0, height:44 }}>
+              style={{ background:'#5d5cf5', color:'white', border:'none', borderRadius:10, padding:'0 24px', fontSize:15, fontWeight:700, cursor:'pointer', flexShrink:0, height:44 }}>
               Search
             </button>
           </div>
@@ -170,7 +170,7 @@ export default function SchoolDiscovery() {
           <span style={{ fontSize:13, fontWeight:600, color:'#1a1814' }}>Board:</span>
           {BOARDS.map(b => (
             <button key={b} onClick={() => { setFilter('board')(b); loadAllSchools({ board: b !== 'All' ? b : undefined, area: filters.area || undefined }) }}
-              style={{ padding:'5px 12px', borderRadius:20, border:'1.5px solid', borderColor:filters.board===b?'#d4521a':'#e5e7eb', background:filters.board===b?'#fdf0ea':'white', color:filters.board===b?'#d4521a':'#6b7280', fontSize:12, fontWeight:500, cursor:'pointer' }}>
+              style={{ padding:'5px 12px', borderRadius:20, border:'1.5px solid', borderColor:filters.board===b?'#5d5cf5':'#e5e7eb', background:filters.board===b?'#eeeeff':'white', color:filters.board===b?'#5d5cf5':'#6b7280', fontSize:12, fontWeight:500, cursor:'pointer' }}>
               {b}
             </button>
           ))}
@@ -194,7 +194,7 @@ export default function SchoolDiscovery() {
           </div>
         ) : loading ? (
           <div style={{ textAlign:'center', padding:'60px 0' }}>
-            <div style={{ width:40, height:40, border:'4px solid #f3f4f6', borderTop:'4px solid #d4521a', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 16px' }} />
+            <div style={{ width:40, height:40, border:'4px solid #f3f4f6', borderTop:'4px solid #5d5cf5', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 16px' }} />
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
             <p style={{ color:'#9ca3af', fontSize:14 }}>Finding schools...</p>
           </div>
@@ -209,11 +209,11 @@ export default function SchoolDiscovery() {
             {schools.map(school => (
               <div key={school.id} onClick={() => handleSelectSchool(school)}
                 style={{ background:'white', borderRadius:20, overflow:'hidden', cursor:'pointer', boxShadow:'0 2px 12px rgba(0,0,0,0.06)', border:'1.5px solid transparent', transition:'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.boxShadow='0 12px 40px rgba(0,0,0,0.12)'; e.currentTarget.style.borderColor='#d4521a' }}
+                onMouseEnter={e => { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.boxShadow='0 12px 40px rgba(0,0,0,0.12)'; e.currentTarget.style.borderColor='#5d5cf5' }}
                 onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='0 2px 12px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor='transparent' }}>
 
                 {/* Banner */}
-                <div style={{ height:150, background:'linear-gradient(135deg,#1a1814,#d4521a)', position:'relative', overflow:'hidden' }}>
+                <div style={{ height:150, background:'linear-gradient(135deg,#1a1814,#5d5cf5)', position:'relative', overflow:'hidden' }}>
                   {school.banner_url
                     ? <img src={imgUrl(school.banner_url)} alt={school.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                     : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -238,7 +238,7 @@ export default function SchoolDiscovery() {
                     )}
                   </div>
                   <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:10 }}>
-                    {school.board && <span style={{ fontSize:11, fontWeight:700, background:'#fdf0ea', color:'#d4521a', padding:'3px 10px', borderRadius:12 }}>{school.board}</span>}
+                    {school.board && <span style={{ fontSize:11, fontWeight:700, background:'#eeeeff', color:'#5d5cf5', padding:'3px 10px', borderRadius:12 }}>{school.board}</span>}
                     {(school.area || school.city) && <span style={{ fontSize:11, color:'#9ca3af' }}>📍 {school.area || school.city}</span>}
                   </div>
                   {school.grades_offered && <p style={{ fontSize:12, color:'#6b7280', marginBottom:5 }}>🎓 {school.grades_offered}</p>}

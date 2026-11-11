@@ -81,7 +81,7 @@ export default function DriverTracking() {
         {/* Header */}
         <div style={{ textAlign:'center', marginBottom:28 }}>
           <p style={{ fontSize:22, fontWeight:800 }}>
-            Enroll<span style={{ color:'#38ba9c' }}>IQ</span>
+            Enroll<span style={{ color:'#8d8cf9' }}>IQ</span>
           </p>
           <p style={{ fontSize:13, color:'rgba(255,255,255,0.5)', marginTop:4 }}>Driver Live Tracking</p>
         </div>
@@ -106,7 +106,7 @@ export default function DriverTracking() {
             <div style={{ marginTop:16, fontSize:12.5, color:'rgba(255,255,255,0.6)', lineHeight:1.9 }}>
               <div>📍 {pos.lat.toFixed(5)}, {pos.lng.toFixed(5)}</div>
               <div>🎯 Accuracy ~{Math.round(pos.acc)}m {pos.spd != null ? `· 🚀 ${pos.spd} km/h` : ''}</div>
-              <div style={{ color:'#38ba9c' }}>✓ {pings} update{pings === 1 ? '' : 's'} sent</div>
+              <div style={{ color:'#8d8cf9' }}>✓ {pings} update{pings === 1 ? '' : 's'} sent</div>
             </div>
           )}
         </div>
@@ -132,9 +132,9 @@ export default function DriverTracking() {
                 {['Pickup','Drop'].map(t => (
                   <button key={t} onClick={() => setTripType(t)}
                     style={{ flex:1, padding:'12px', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer',
-                      border: tripType === t ? '2px solid #38ba9c' : '1px solid rgba(255,255,255,0.15)',
+                      border: tripType === t ? '2px solid #8d8cf9' : '1px solid rgba(255,255,255,0.15)',
                       background: tripType === t ? 'rgba(56,186,156,0.15)' : 'transparent',
-                      color: tripType === t ? '#38ba9c' : 'rgba(255,255,255,0.6)' }}>
+                      color: tripType === t ? '#8d8cf9' : 'rgba(255,255,255,0.6)' }}>
                     {t === 'Pickup' ? '⬆ Pickup' : '⬇ Drop'}
                   </button>
                 ))}
@@ -145,7 +145,7 @@ export default function DriverTracking() {
 
         {/* Main button */}
         {!active ? (
-          <button onClick={startTrip} style={{ ...bigBtn, background:'#12a38a' }}>
+          <button onClick={startTrip} style={{ ...bigBtn, background:'#5d5cf5' }}>
             ▶  Start Trip
           </button>
         ) : (

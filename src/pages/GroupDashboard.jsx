@@ -13,7 +13,7 @@ import ChairmanAssistantWidget from '../components/ChairmanAssistantWidget'
    editing always happens through the real branch screens.
    ═══════════════════════════════════════════════════════════════ */
 
-const COLORS = ['#12a38a', '#7c3aed', '#f59e0b', '#2563eb', '#db2777', '#0891b2', '#65a30d', '#dc2626']
+const COLORS = ['#5d5cf5', '#7c3aed', '#f59e0b', '#2563eb', '#db2777', '#0891b2', '#65a30d', '#dc2626']
 
 // ₹ in lakh / crore so big numbers never overflow a tile
 const inr = (n) => {
@@ -68,8 +68,8 @@ function Pills({ items, value, onChange }) {
       {items.map(m => (
         <button key={m.key} onClick={() => onChange(m.key)}
           style={{ fontSize: 12, padding: '5px 12px', borderRadius: 99, cursor: 'pointer',
-            border: '1px solid ' + (value === m.key ? '#12a38a' : '#e5e7eb'),
-            background: value === m.key ? '#e7f7f2' : '#fff', color: value === m.key ? '#0d8571' : '#4b5563',
+            border: '1px solid ' + (value === m.key ? '#5d5cf5' : '#e5e7eb'),
+            background: value === m.key ? '#eeeeff' : '#fff', color: value === m.key ? '#4a49d6' : '#4b5563',
             fontWeight: value === m.key ? 600 : 400 }}>{m.label}</button>
       ))}
     </div>
@@ -128,7 +128,7 @@ function Trend({ months, series, fmt, colorOf }) {
 }
 
 const STAGES = ['New', 'Contacted', 'Campus Visit', 'Admission', 'Admitted', 'Lost']
-const STAGE_COLOR = { New: '#94a3b8', Contacted: '#2563eb', 'Campus Visit': '#f59e0b', Admission: '#12a38a', Admitted: '#12a38a', Lost: '#dc2626' }
+const STAGE_COLOR = { New: '#94a3b8', Contacted: '#2563eb', 'Campus Visit': '#f59e0b', Admission: '#5d5cf5', Admitted: '#5d5cf5', Lost: '#dc2626' }
 
 export default function GroupDashboard() {
   const [data, setData] = useState(null)

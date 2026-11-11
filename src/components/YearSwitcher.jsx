@@ -61,7 +61,7 @@ export default function YearSwitcher({ variant = 'sidebar', onChanged }) {
             <span style={{ fontSize:14 }}>🎓</span>
             <span style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', lineHeight:1.2 }}>
               <span style={{ fontSize:10, color:'#9ca3af', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' }}>Academic Year</span>
-              <span style={{ fontWeight:700, color:'#12a38a' }}>{active ? active.name : '—'}</span>
+              <span style={{ fontWeight:700, color:'#5d5cf5' }}>{active ? active.name : '—'}</span>
             </span>
           </span>
           <span style={{ color:'#9ca3af', fontSize:11 }}>▼</span>
@@ -72,8 +72,8 @@ export default function YearSwitcher({ variant = 'sidebar', onChanged }) {
             {years.map(y => (
               <button key={y.id} onClick={() => switchTo(y)} disabled={busy}
                 style={{ width:'100%', textAlign:'left', padding:'10px 12px', border:'none',
-                  background: y.is_active ? '#e7f7f2' : '#fff', cursor:'pointer', fontSize:13,
-                  fontWeight: y.is_active ? 700 : 500, color: y.is_active ? '#0d8571' : '#374151',
+                  background: y.is_active ? '#eeeeff' : '#fff', cursor:'pointer', fontSize:13,
+                  fontWeight: y.is_active ? 700 : 500, color: y.is_active ? '#4a49d6' : '#374151',
                   display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 {y.name}{y.is_active && <span style={{ fontSize:11 }}>✓ active</span>}
               </button>
@@ -86,16 +86,16 @@ export default function YearSwitcher({ variant = 'sidebar', onChanged }) {
 
   // ── dashboard variant: banner ──
   return (
-    <div style={{ display:'inline-flex', alignItems:'center', gap:12, background:'#e7f7f2',
-      border:'1px solid #cdede4', borderRadius:12, padding:'10px 16px' }}>
+    <div style={{ display:'inline-flex', alignItems:'center', gap:12, background:'#eeeeff',
+      border:'1px solid #dcdcfd', borderRadius:12, padding:'10px 16px' }}>
       <span style={{ fontSize:18 }}>🎓</span>
       <div style={{ lineHeight:1.3 }}>
-        <div style={{ fontSize:10, color:'#0a5546', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>Viewing Academic Year</div>
-        <div style={{ fontSize:16, fontWeight:700, color:'#0d8571' }}>{active ? active.name : '—'}</div>
+        <div style={{ fontSize:10, color:'#3a39ab', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.05em' }}>Viewing Academic Year</div>
+        <div style={{ fontSize:16, fontWeight:700, color:'#4a49d6' }}>{active ? active.name : '—'}</div>
       </div>
       <div style={{ position:'relative' }}>
         <button onClick={() => setOpen(o=>!o)}
-          style={{ background:'#12a38a', color:'#fff', border:'none', borderRadius:8, padding:'6px 12px',
+          style={{ background:'#5d5cf5', color:'#fff', border:'none', borderRadius:8, padding:'6px 12px',
             fontSize:12, fontWeight:600, cursor:'pointer' }}>Switch ▼</button>
         {open && (
           <div style={{ position:'absolute', top:'110%', right:0, minWidth:160, background:'#fff',
@@ -103,8 +103,8 @@ export default function YearSwitcher({ variant = 'sidebar', onChanged }) {
             {years.map(y => (
               <button key={y.id} onClick={() => switchTo(y)} disabled={busy}
                 style={{ width:'100%', textAlign:'left', padding:'10px 12px', border:'none',
-                  background: y.is_active ? '#e7f7f2' : '#fff', cursor:'pointer', fontSize:13,
-                  fontWeight: y.is_active ? 700 : 500, color: y.is_active ? '#0d8571' : '#374151',
+                  background: y.is_active ? '#eeeeff' : '#fff', cursor:'pointer', fontSize:13,
+                  fontWeight: y.is_active ? 700 : 500, color: y.is_active ? '#4a49d6' : '#374151',
                   display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 {y.name}{y.is_active && <span style={{ fontSize:11 }}>✓</span>}
               </button>

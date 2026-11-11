@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import api from '../api/axios'
 
-const TEAL = '#12a38a'
+const TEAL = '#5d5cf5'
 
 export default function AssistantWidget() {
   const [enabled, setEnabled] = useState(null)  // null=checking, false=hidden, true=show
@@ -92,8 +92,8 @@ export default function AssistantWidget() {
             <div style={{ padding:'0 12px 8px', display:'flex', gap:6, flexWrap:'wrap' }}>
               {suggestions.map(s => (
                 <button key={s} onClick={() => setInput(s)}
-                  style={{ fontSize:11, padding:'5px 10px', borderRadius:20, border:'1px solid #cdede4',
-                    background:'#e7f7f2', color:'#0d8571', cursor:'pointer' }}>{s}</button>
+                  style={{ fontSize:11, padding:'5px 10px', borderRadius:20, border:'1px solid #dcdcfd',
+                    background:'#eeeeff', color:'#4a49d6', cursor:'pointer' }}>{s}</button>
               ))}
             </div>
           )}

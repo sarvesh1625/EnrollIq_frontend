@@ -240,7 +240,7 @@ function FeatureToggles({ schoolId, token, onToast }) {
             <div className="flex items-center gap-2">
               <button onClick={() => toggle(key, !on)}
                 className={`w-11 h-6 rounded-full transition-all relative ${on?'bg-brand-600':'bg-gray-200'}`}
-                style={{ background: on ? '#12a38a' : '#e5e7eb' }}>
+                style={{ background: on ? '#5d5cf5' : '#e5e7eb' }}>
                 <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all"
                   style={{ left: on ? '22px' : '2px' }} />
               </button>
