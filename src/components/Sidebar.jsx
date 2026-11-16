@@ -48,6 +48,7 @@ const NAV = [
   { to:'/attendance',     icon:'✓',  label:'Attendance'    },
   { to:'/exams',          icon:'✎',  label:'Exams'         },
   { to:'/daily-updates',  icon:'📔', label:'Daily Updates', feature:'daily_diary' },
+  { to:'/timetable', icon:'🗓', label:'Timetable' },
   { section: 'Finance & Ops' },
   { to:'/fees',           icon:'◎',  label:'Fees'          },
   { to:'/payment-settings', icon:'💳', label:'Online Payments' },

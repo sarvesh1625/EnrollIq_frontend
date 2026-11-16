@@ -36,6 +36,8 @@ import AcademicYear from "./pages/Academicyear";
 import DailyUpdates from "./pages/DailyUpdates";
 import SchoolBranding from './pages/SchoolBranding'
 import PaymentSettings from './pages/PaymentSettings'
+import Timetable from './pages/Timetable'
+
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -93,6 +95,7 @@ export default function App() {
         <Route path="/transport-dashboard"       element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
         <Route path="/school-branding" element={<PrivateRoute><SchoolBranding /></PrivateRoute>} />
         <Route path="/payment-settings" element={<PrivateRoute><PaymentSettings /></PrivateRoute>} />
+        <Route path="/timetable" element={<PrivateRoute><Timetable /></PrivateRoute>} />
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/kit" element={<SchoolKit />} />
