@@ -10,7 +10,7 @@ const ROLE_ALLOWED = {
   admin:             null,
   staff:             ['/leads','/students','/attendance','/exams','/communication'],
   teacher:           ['/students','/attendance','/exams'],
-  accountant:        ['/fees','/analytics'],
+  accountant:        ['/fees','/payment-settings','/analytics'],
   receptionist:      ['/leads','/admissions'],
   transport_manager: ['/transport'],
 }
@@ -50,6 +50,7 @@ const NAV = [
   { to:'/daily-updates',  icon:'📔', label:'Daily Updates', feature:'daily_diary' },
   { section: 'Finance & Ops' },
   { to:'/fees',           icon:'◎',  label:'Fees'          },
+  { to:'/payment-settings', icon:'💳', label:'Online Payments' },
   { to:'/transport',      icon:'⬡',  label:'Transport'     },
   { to:'/communication',  icon:'✉',  label:'Communication' },
   { to:'/posters',        icon:'🎉', label:'Posters'       },

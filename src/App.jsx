@@ -35,6 +35,7 @@ import Cameras from './pages/Cameras'
 import AcademicYear from "./pages/Academicyear";
 import DailyUpdates from "./pages/DailyUpdates";
 import SchoolBranding from './pages/SchoolBranding'
+import PaymentSettings from './pages/PaymentSettings'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -91,6 +92,7 @@ export default function App() {
         <Route path="/receptionist-dashboard"    element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
         <Route path="/transport-dashboard"       element={<PrivateRoute><RoleDashboard /></PrivateRoute>} />
         <Route path="/school-branding" element={<PrivateRoute><SchoolBranding /></PrivateRoute>} />
+        <Route path="/payment-settings" element={<PrivateRoute><PaymentSettings /></PrivateRoute>} />
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/kit" element={<SchoolKit />} />
