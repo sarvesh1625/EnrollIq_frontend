@@ -37,6 +37,8 @@ import DailyUpdates from "./pages/DailyUpdates";
 import SchoolBranding from './pages/SchoolBranding'
 import PaymentSettings from './pages/PaymentSettings'
 import Timetable from './pages/Timetable'
+import PayPage from './pages/PayPage'
+import AuditLog from './pages/AuditLog'
 
 
 function PrivateRoute({ children }) {
@@ -66,6 +68,7 @@ export default function App() {
 <Route path="/cameras"  element={<Cameras />} />
 <Route path="/academic" element={<AcademicYear />} />
 <Route path="/daily-updates" element={<DailyUpdates />} />
+<Route path="/pay/:token" element={<PayPage />} />
 
         {/* Protected — school admin/staff */}
         <Route path="/dashboard"     element={<PrivateRoute><Dashboard /></PrivateRoute>} />
@@ -99,6 +102,8 @@ export default function App() {
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
         <Route path="/kit" element={<SchoolKit />} />
+        <Route path="/audit-log" element={<AuditLog />} />
+        <Route path="/exam-duties" element={<ExamDuties />} />.
       </Routes>
     </BrowserRouter>
   )

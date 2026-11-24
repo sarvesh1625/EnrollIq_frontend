@@ -331,6 +331,8 @@ function MarkEntry({ exam, subjects, onBack, showToast }) {
   const [showGenPaper, setShowGenPaper]     = useState(false)
   const [showViewPaper, setShowViewPaper]   = useState(false)
   const [aiExamEnabled, setAiExamEnabled]   = useState(false)
+  const [mstatus, setMstatus]     = useState(exam.marks_status || 'open')   // open | submitted | verified
+  const locked = mstatus === 'verified'
 
   useEffect(() => {
     api.get('/features/mine')
@@ -388,7 +390,10 @@ function MarkEntry({ exam, subjects, onBack, showToast }) {
     }))
     if (!rows.length) { showToast('No marks entered yet'); setSaving(false); return }
     try { await examsApi.enterMarks(exam.id, { marks: rows }); showToast(`${rows.length} marks saved ✓`) }
-    catch { showToast('Saved (demo)') }
+    catch (e) {
+      if (e.response) { showToast(e.response.data?.message || 'Could not save marks'); setSaving(false); return }   // real server answer (e.g. locked) — don't pretend it saved
+      showToast('Saved (demo)')
+    }
     setSaved(true); setDirty(false); setSaving(false)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -396,7 +401,17 @@ function MarkEntry({ exam, subjects, onBack, showToast }) {
   const genRC = async () => {
     if (!confirm('Generate report cards for all students with marks entered?')) return
     try { const r = await examsApi.generateRC(exam.id); showToast(r.data?.message || 'Report cards generated ✓') }
-    catch { showToast('Report cards generated ✓ (demo)') }
+    catch (e) { showToast(e.response?.data?.message || 'Could not generate report cards') }
+  }
+
+  // marks workflow: submit (teacher) → verify & lock (principal/admin) → reopen (with reason)
+  const markFlow = async (step) => {
+    let body = {}
+    if (step === 'reopen') { const reason = window.prompt('Why are you reopening these marks?'); if (!reason) return; body = { reason } }
+    if (step === 'verify' && !confirm('Verify and lock these marks? Nobody can change them until you reopen.')) return
+    if (dirty && !confirm('You have unsaved marks. Continue without saving them?')) return
+    try { const r = await api.post(`/exams/${exam.id}/marks/${step}`, body); setMstatus(r.data.marks_status); showToast(r.data.message) }
+    catch (e) { showToast(e.response?.data?.message || 'Could not do that') }
   }
 
   // student totals
@@ -449,8 +464,14 @@ function MarkEntry({ exam, subjects, onBack, showToast }) {
           {aiExamEnabled && <button className="btn-ghost text-sm" onClick={() => setShowGenPaper(true)}>✨ Generate paper</button>}
           {aiExamEnabled && <button className="btn-ghost text-sm" onClick={() => setShowViewPaper(true)}>📄 View paper</button>}
           {aiExamEnabled && <button className="btn-ghost text-sm" onClick={() => setShowUploadSheet(true)}>📤 Upload answer sheet</button>}
-          <button className="btn-ghost text-sm" onClick={genRC}>📄 Generate report cards</button>
-          <button className="btn-primary" onClick={save} disabled={saving || !dirty}>
+          <span className={`badge ${locked ? 'badge-green' : mstatus === 'submitted' ? 'badge-amber' : 'badge-gray'}`}>
+            {locked ? '🔒 Verified' : mstatus === 'submitted' ? '⏳ Awaiting verification' : '✏️ Open'}
+          </span>
+          {mstatus === 'open' && <button className="btn-ghost text-sm" onClick={() => markFlow('submit')}>📨 Submit for verification</button>}
+          {mstatus !== 'verified' && <button className="btn-ghost text-sm" onClick={() => markFlow('verify')}>✅ Verify & lock</button>}
+          {mstatus !== 'open' && <button className="btn-ghost text-sm" onClick={() => markFlow('reopen')}>↩ Reopen</button>}
+          <button className="btn-ghost text-sm" onClick={genRC} disabled={!locked} title={locked ? '' : 'Verify the marks first'}>📄 Generate report cards</button>
+          <button className="btn-primary" onClick={save} disabled={saving || !dirty || locked}>
             {saving ? 'Saving…' : saved ? '✓ Saved' : dirty ? '💾 Save marks' : 'Saved'}
           </button>
         </div>
@@ -574,6 +595,7 @@ function MarkEntry({ exam, subjects, onBack, showToast }) {
                                 onChange={e => setMark(st.id, selSubject.id, e.target.value, selSubject.max_marks)}
                                 onKeyDown={e => onKey(e, i)}
                                 onFocus={e => e.target.select()}
+                                disabled={locked}
                                 placeholder="—"
                                 className="input"
                                 style={{ width:74, textAlign:'center', padding:'5px 8px', margin:'0 auto',

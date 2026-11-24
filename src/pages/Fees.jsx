@@ -290,6 +290,164 @@ function FeeStructureModal({ onClose, onSaved }) {
   )
 }
 
+// ── Send pay link (parent opens it, pays online) ─────────────────────────────
+function PayLinkModal({ payment, onClose }) {
+  const [onlyThis, setOnlyThis] = useState(false)
+  const [link, setLink]   = useState(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy]   = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const make = async () => {
+    setBusy(true); setError(''); setLink(null)
+    try {
+      const body = { student_id: payment.student_id }
+      if (onlyThis) body.payment_ids = [payment.id]
+      const r = await api.post('/payments/links', body)
+      setLink(r.data)
+    } catch (e) { setError(e.response?.data?.message || 'Could not create the link') }
+    finally { setBusy(false) }
+  }
+  useEffect(() => { make() }, [onlyThis]) // eslint-disable-line
+
+  const copy = async () => { try { await navigator.clipboard.writeText(link.url); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch { window.prompt('Copy this link', link.url) } }
+  const text = link ? `Dear Parent, fee of ₹${Number(link.amount).toLocaleString('en-IN')} is due for ${payment.student_name}. Pay securely online: ${link.url}` : ''
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-gray-100 flex justify-between items-center">
+          <div>
+            <h2 className="font-serif text-lg font-bold text-ink">Send pay link</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{payment.student_name} · {payment.class}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-ink text-xl">×</button>
+        </div>
+        <div className="p-5 flex flex-col gap-4">
+          {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg">{error}</div>}
+          {busy && !link && <p className="text-sm text-gray-400">Creating link…</p>}
+          {link && (
+            <>
+              <div className="bg-paper rounded-xl p-4">
+                <p className="text-xs text-gray-400">Parent will pay</p>
+                <p className="text-2xl font-bold text-ink">₹{Number(link.amount).toLocaleString('en-IN')}</p>
+                <p className="text-xs text-gray-500 mt-1">{link.items.map(i => i.fee_type).join(' + ')}</p>
+              </div>
+              <input className="input" readOnly value={link.url} onFocus={e => e.target.select()} />
+              <div className="flex gap-2 flex-wrap">
+                <button className="btn-primary" onClick={copy}>{copied ? '✓ Copied' : 'Copy link'}</button>
+                <a className="btn-ghost" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(text)}`}>Share on WhatsApp</a>
+              </div>
+              <p className="text-xs text-gray-400">The link works for 7 days. The amount is always the live balance, so it can't be edited by the parent.</p>
+            </>
+          )}
+          {payment.paid_amount > 0 || true ? (
+            <label className="text-xs text-gray-500 flex items-center gap-2">
+              <input type="checkbox" checked={onlyThis} onChange={e => setOnlyThis(e.target.checked)} />
+              Only this invoice ({payment.fee_type}) — otherwise all pending fees of this student
+            </label>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Online payment gateways (school's own Razorpay / Cashfree / PhonePe keys) ─
+function GatewaysModal({ onClose }) {
+  const [list, setList]   = useState(null)
+  const [error, setError] = useState('')
+  const [open, setOpen]   = useState('')
+  const [form, setForm]   = useState({})
+  const [note, setNote]   = useState('')
+  const [busy, setBusy]   = useState(false)
+
+  const load = async () => {
+    try { const r = await api.get('/payments/gateways'); setList(r.data) }
+    catch (e) { setError(e.response?.data?.message || 'Could not load') }
+  }
+  useEffect(() => { load() }, [])
+
+  const g = (list || []).find(x => x.provider === open)
+  const pick = (p) => { setOpen(p === open ? '' : p); setForm({}); setNote('') }
+  const save = async (enabled) => {
+    setBusy(true); setNote('')
+    try {
+      await api.put(`/payments/gateways/${g.provider}`, { credentials: form.c || {}, mode: form.mode || g.mode, enabled })
+      setNote('Saved ✓'); setForm({}); await load()
+    } catch (e) { setNote(e.response?.data?.message || 'Could not save') }
+    finally { setBusy(false) }
+  }
+  const test = async () => {
+    setBusy(true); setNote('Testing…')
+    try { const r = await api.post(`/payments/gateways/${g.provider}/test`); setNote((r.data.ok ? '✓ ' : '✗ ') + (r.data.message || '')) }
+    catch (e) { setNote(e.response?.data?.message || 'Test failed') }
+    finally { setBusy(false) }
+  }
+  const toggle = async (enabled) => {
+    try { await api.patch(`/payments/gateways/${g.provider}/enabled`, { enabled }); await load() }
+    catch (e) { setNote(e.response?.data?.message || 'Could not change') }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl" style={{ maxHeight:'90vh', overflowY:'auto' }} onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-gray-100 flex justify-between items-center">
+          <div>
+            <h2 className="font-serif text-xl font-bold text-ink">Online payments</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Money goes straight to your school's own gateway account. Start in test mode.</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-ink text-xl">×</button>
+        </div>
+        <div className="p-5 flex flex-col gap-3">
+          {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-lg">{error}</div>}
+          {!list && !error && <p className="text-sm text-gray-400">Loading…</p>}
+          {(list || []).map(p => (
+            <div key={p.provider} className="border border-gray-100 rounded-xl">
+              <button className="w-full flex justify-between items-center p-4 text-left" onClick={() => pick(p.provider)}>
+                <span className="text-sm font-semibold text-ink">{p.label}</span>
+                <span className="text-xs" style={{ color: p.shown_to_parents ? 'var(--c-green)' : 'var(--c-muted)' }}>
+                  {p.shown_to_parents ? `● On (${p.mode})` : p.configured ? 'Saved · off' : 'Not set up'}
+                </span>
+              </button>
+              {open === p.provider && (
+                <div className="p-4 pt-0 flex flex-col gap-3">
+                  {p.fields.map(f => (
+                    <div key={f.key}>
+                      <label className="label">{f.label}{f.required ? ' *' : ''}</label>
+                      <input className="input" type={f.secret ? 'password' : 'text'} autoComplete="off"
+                        placeholder={f.secret && f.has_value ? `${f.value} (saved — leave blank to keep)` : (f.default || '')}
+                        defaultValue={f.secret ? '' : f.value}
+                        onChange={e => setForm(x => ({ ...x, c: { ...(x.c || {}), [f.key]: e.target.value } }))} />
+                      {f.help && <p className="text-xs text-gray-400 mt-1">{f.help}</p>}
+                    </div>
+                  ))}
+                  {p.provider !== 'razorpay' && (
+                    <div>
+                      <label className="label">Mode</label>
+                      <select className="input" defaultValue={p.mode} onChange={e => setForm(x => ({ ...x, mode: e.target.value }))}>
+                        <option value="test">Test (no real money)</option><option value="live">Live</option>
+                      </select>
+                    </div>
+                  )}
+                  <div className="bg-paper rounded-lg p-3 text-xs text-gray-500">Webhook URL (paste in the gateway dashboard): <b style={{ wordBreak:'break-all' }}>{p.webhook_url}</b></div>
+                  {note && <p className="text-sm text-ink">{note}</p>}
+                  <div className="flex gap-2 flex-wrap">
+                    <button className="btn-primary" disabled={busy} onClick={() => save(true)}>Save &amp; turn on</button>
+                    <button className="btn-ghost" disabled={busy} onClick={test}>Test keys</button>
+                    {p.saved && p.enabled && <button className="btn-ghost" onClick={() => toggle(false)}>Turn off</button>}
+                    {p.saved && !p.enabled && <button className="btn-ghost" onClick={() => toggle(true)}>Turn on</button>}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Fees Page ────────────────────────────────────────────────────────────
 const STATUS_DOT = {
   Paid:    { bg:'var(--c-green-lt)', c:'var(--c-green)' },
@@ -314,6 +472,8 @@ export default function Fees() {
   const [showCreate,    setShowCreate]    = useState(false)
   const [showRecord,    setShowRecord]    = useState(null)
   const [showStructure, setShowStructure] = useState(false)
+  const [showPayLink,   setShowPayLink]   = useState(null)
+  const [showGateways,  setShowGateways]  = useState(false)
 
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
@@ -357,6 +517,7 @@ export default function Fees() {
             <p style={{ color:'var(--c-muted)', fontSize:13, margin:'6px 0 0' }}>Track payments, dues and overdue accounts</p>
           </div>
           <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+            <button className="btn-ghost" onClick={() => setShowGateways(true)}>💳 Online payments</button>
             <button className="btn-ghost" onClick={() => setShowReminders(true)}>🔔 Reminders</button>
             <button className="btn-ghost" onClick={() => setShowStructure(true)}>⚙ Fee structure</button>
             <button className="btn-primary" onClick={() => setShowCreate(true)}>+ Create invoice</button>
@@ -421,7 +582,7 @@ export default function Fees() {
             </div>
 
             <div className="card" style={{ padding:0, overflow:'hidden' }}>
-              <div className="hide-md" style={{ display:'grid', gridTemplateColumns:'2fr 80px 1.2fr 1fr 1fr 100px 90px 70px', gap:12, padding:'12px 20px', borderBottom:'1px solid var(--c-border)', background:'var(--c-surface-2)' }}>
+              <div className="hide-md" style={{ display:'grid', gridTemplateColumns:'2fr 80px 1.2fr 1fr 1fr 100px 90px 130px', gap:12, padding:'12px 20px', borderBottom:'1px solid var(--c-border)', background:'var(--c-surface-2)' }}>
                 {['Student','Class','Fee type','Amount','Paid','Due','Status',''].map((h,i) => (
                   <span key={i} style={{ fontSize:11, fontWeight:600, color:'var(--c-muted)', textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</span>
                 ))}
@@ -445,7 +606,7 @@ export default function Fees() {
                     const st = STATUS_DOT[p.status] || STATUS_DOT.Pending
                     return (
                       <div key={p.id} className="fee-row"
-                        style={{ display:'grid', gridTemplateColumns:'2fr 80px 1.2fr 1fr 1fr 100px 90px 70px', gap:12, alignItems:'center',
+                        style={{ display:'grid', gridTemplateColumns:'2fr 80px 1.2fr 1fr 1fr 100px 90px 130px', gap:12, alignItems:'center',
                           padding:'14px 20px', borderBottom: i < payments.length-1 ? '1px solid #faf9f7' : 'none' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                           <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--c-bg)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:'var(--c-ink-2)', flexShrink:0 }}>{p.student_name?.[0]}</div>
@@ -462,7 +623,10 @@ export default function Fees() {
                         <span className="badge" style={{ background:st.bg, color:st.c, justifySelf:'start' }}>{p.status}</span>
                         <span style={{ textAlign:'right' }}>
                           {p.status !== 'Paid' && (
-                            <button onClick={() => setShowRecord(p)} style={{ fontSize:12, color:'var(--c-brand)', background:'none', border:'none', cursor:'pointer', fontWeight:500 }}>Record</button>
+                            <>
+                              <button onClick={() => setShowRecord(p)} style={{ fontSize:12, color:'var(--c-brand)', background:'none', border:'none', cursor:'pointer', fontWeight:500 }}>Record</button>
+                              <button onClick={() => setShowPayLink(p)} style={{ fontSize:12, color:'var(--c-brand)', background:'none', border:'none', cursor:'pointer', fontWeight:500 }}>Pay link</button>
+                            </>
                           )}
                         </span>
                       </div>
@@ -511,6 +675,8 @@ export default function Fees() {
       {showCreate    && <CreateInvoiceModal students={students} onClose={() => setShowCreate(false)} onSaved={handleSaved} />}
       {showRecord    && <RecordPaymentModal payment={showRecord} onClose={() => setShowRecord(null)} onSaved={handleSaved} />}
       {showStructure && <FeeStructureModal onClose={() => setShowStructure(false)} onSaved={handleSaved} />}
+      {showPayLink   && <PayLinkModal payment={showPayLink} onClose={() => setShowPayLink(null)} />}
+      {showGateways  && <GatewaysModal onClose={() => setShowGateways(false)} />}
       {showReminders && <RemindersModal onClose={() => setShowReminders(false)} onSent={msg => { setShowReminders(false); showToast(msg) }} />}
 
       <style>{`

@@ -65,7 +65,9 @@ const NAV = [
   { to:'/school-branding', icon:'🏫', label:'School Logo'   },
   { to:'/tracking', icon:'🛰️', label:'Live Tracking' },
 { to:'/cameras',  icon:'📹', label:'Cameras' },
-{ to:'/academic', icon:'🎓', label:'Academic Year' }
+{ to:'/academic', icon:'🎓', label:'Academic Year' },
+{ to:'/audit-log', icon:'🧾', label:'Audit log' },
+{ to:'/exam-duties', icon:'📋', label:'Exam duties' },
 ]
 
 export default function Sidebar({ onClose, mobile }) {
