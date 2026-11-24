@@ -39,6 +39,7 @@ import PaymentSettings from './pages/PaymentSettings'
 import Timetable from './pages/Timetable'
 import PayPage from './pages/PayPage'
 import AuditLog from './pages/AuditLog'
+import ExamDuties from './pages/ExamDuties'
 
 
 function PrivateRoute({ children }) {
